@@ -20,13 +20,14 @@ from shared.core.config import Settings, get_settings
 from shared.core.database import engine
 from shared.core.dependencies import get_session
 from shared.core.exceptions import DomainError
+from shared.core.i18n import LocaleMiddleware, translate
 from shared.core.logging import configure_logging
 
 logger = logging.getLogger("firstcase")
 
 
 def error_response(status: int, code: str, message: str, details=None):
-    body = {"error": {"code": code, "message": message}}
+    body = {"error": {"code": code, "key": message, "message": translate(message)}}
     if details is not None:
         body["error"]["details"] = details
     return JSONResponse(body, status_code=status)
@@ -70,7 +71,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_origins=settings.origins,
         allow_credentials=False,
         allow_methods=["GET", "POST", "PUT", "PATCH", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type"],
+        allow_headers=["Authorization", "Content-Type", "Accept-Language"],
         expose_headers=["Content-Disposition"],
     )
     app.add_middleware(BodyLimitMiddleware, maximum=(settings.max_upload_size_mb + 1) * 1024 * 1024)
@@ -82,11 +83,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if length:
             try:
                 if int(length) > (settings.max_upload_size_mb + 1) * 1024 * 1024:
-                    return error_response(
-                        413, "request_too_large", "Запрос превышает допустимый размер"
-                    )
+                    return error_response(413, "request_too_large", "request_too_large")
             except ValueError:
-                return error_response(400, "invalid_request", "Некорректный Content-Length")
+                return error_response(400, "invalid_request", "invalid_content_length")
         if request.method in {"POST", "PATCH", "PUT", "DELETE"}:
             now = time.monotonic()
             sensitive = request.url.path.startswith("/api/v1/auth/")
@@ -100,9 +99,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             if len(bucket) >= (
                 settings.auth_rate_limit if sensitive else settings.write_rate_limit
             ):
-                response = error_response(
-                    429, "rate_limited", "Слишком много запросов. Попробуйте через минуту"
-                )
+                response = error_response(429, "rate_limited", "rate_limited")
                 response.headers["Retry-After"] = "60"
                 return response
             bucket.append(now)
@@ -118,29 +115,28 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.exception_handler(DomainError)
     async def domain_error(request: Request, exc: DomainError):
-        return error_response(exc.status_code, exc.code, exc.message, exc.details)
+        return error_response(exc.status_code, exc.code, exc.key, exc.details)
 
     @app.exception_handler(RequestValidationError)
     async def validation_error(request: Request, exc: RequestValidationError):
-        details = [
-            {"loc": list(e["loc"]), "message": e["msg"], "type": e["type"]} for e in exc.errors()
-        ]
-        return error_response(422, "validation_error", "Проверьте введённые данные", details)
+        details = [{"loc": list(e["loc"]), "type": e["type"]} for e in exc.errors()]
+        return error_response(422, "validation_error", "validation_error", details)
 
     @app.exception_handler(IntegrityError)
     async def integrity_error(request: Request, exc: IntegrityError):
-        return error_response(409, "conflict", "Операция конфликтует с текущим состоянием данных")
+        return error_response(409, "conflict", "conflict")
 
     @app.exception_handler(HTTPException)
     async def http_error(request: Request, exc: HTTPException):
-        return error_response(exc.status_code, "http_error", str(exc.detail))
+        key = "request_too_large" if exc.status_code == 413 else "http_error"
+        return error_response(exc.status_code, "http_error", key)
 
     @app.exception_handler(Exception)
     async def unexpected_error(request: Request, exc: Exception):
         logger.error(
             "Request failed: %s %s (%s)", request.method, request.url.path, type(exc).__name__
         )
-        return error_response(500, "internal_error", "Внутренняя ошибка сервера")
+        return error_response(500, "internal_error", "internal_error")
 
     @app.get("/health")
     async def health() -> dict[str, str]:
@@ -152,6 +148,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"status": "ok", "database": "reachable"}
 
     app.include_router(create_router(settings.app_mode))
+    app.add_middleware(LocaleMiddleware)
     return app
 
 

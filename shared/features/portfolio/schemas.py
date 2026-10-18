@@ -3,6 +3,7 @@ from typing import Literal
 
 from pydantic import Field
 
+from shared.features.ai import AiUsage
 from shared.features.common import PatchSchema, Schema
 from shared.features.tasks.schemas import CategoryOut
 from shared.features.uploads.schemas import AttachmentOut
@@ -16,9 +17,12 @@ class VisibilityUpdate(Schema):
     show_customer: bool = False
     attachment_ids: list[int] = Field(default_factory=list, max_length=20)
     message_ids: list[int] = Field(default_factory=list, max_length=20)
+    cover_attachment_id: int | None = Field(default=None, gt=0)
 
 
 class CaseCreate(VisibilityUpdate):
+    ai_usage: AiUsage = "no_ai"
+    ai_disclosure: str = Field(default="", max_length=2000)
     order_id: int | None = Field(default=None, gt=0)
     title: str = Field(min_length=5, max_length=150)
     description: str = Field(min_length=10, max_length=10000)
@@ -26,6 +30,10 @@ class CaseCreate(VisibilityUpdate):
 
 
 class CaseUpdate(PatchSchema):
+    nullable_fields = frozenset({"cover_attachment_id"})
+    cover_attachment_id: int | None = Field(default=None, gt=0)
+    ai_usage: AiUsage | None = None
+    ai_disclosure: str | None = Field(default=None, max_length=2000)
     title: str | None = Field(default=None, min_length=5, max_length=150)
     description: str | None = Field(default=None, min_length=10, max_length=10000)
     result: str | None = Field(default=None, min_length=5, max_length=10000)
@@ -66,6 +74,10 @@ class CaseOut(Schema):
     title: str
     description: str
     result: str
+    ai_usage: AiUsage
+    ai_disclosure: str
+    cover: AttachmentOut | None
+    cover_attachment_id: int | None
     visibility: str
     verified: bool
     category: CategoryOut | None

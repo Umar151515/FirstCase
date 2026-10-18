@@ -38,7 +38,7 @@ class ChatService:
     async def send(self, order_id: int, actor_id: int, data):
         order = await OrderService(self.session).participant(order_id, actor_id, lock=True)
         if order.status == "cancelled":
-            raise conflict("Заказ отменён")
+            raise conflict("order_cancelled")
         from shared.features.uploads.services import UploadService
 
         await UploadService(self.session).bind(data.attachment_ids, actor_id, order_id=order_id)
@@ -47,6 +47,6 @@ class ChatService:
         )
         other = order.performer_id if actor_id == order.customer_id else order.customer_id
         await NotificationService(self.session).notify(
-            other, "new_message", "Новое сообщение в заказе", f"/orders/{order_id}"
+            other, "new_message", "new_message", f"/orders/{order_id}"
         )
         return message

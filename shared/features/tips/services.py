@@ -34,13 +34,15 @@ class TipService:
 
     async def update(self, user_id, data):
         if data.enabled and not data.qr_attachment_id and not data.payment_url:
-            raise DomainError("Добавьте QR или платёжную ссылку", 422, "validation_error")
+            raise DomainError("tips_destination_required", 422, "validation_error")
         if data.qr_attachment_id:
             file = await AttachmentRepository(self.session).get(data.qr_attachment_id, lock=True)
+            if await AttachmentRepository(self.session).avatar_owner(file.id):
+                raise forbidden("standalone_qr_required")
             if file.owner_id != user_id or not file.mime_type.startswith("image/"):
-                raise forbidden("Загрузите собственное изображение QR")
+                raise forbidden("own_qr_required")
             if any(getattr(file, k) for k in ("task_id", "order_id", "report_id", "case_id")):
-                raise forbidden("QR должен быть отдельным файлом")
+                raise forbidden("standalone_qr_required")
         settings = await self.repository.get(user_id)
         if not settings:
             settings = TipSettings(user_id=user_id)
@@ -53,7 +55,7 @@ class TipService:
     async def public(self, user_id, actor_id=None):
         settings = await self.repository.get(user_id)
         if not settings or not settings.enabled:
-            raise missing("Чаевые пока не настроены")
+            raise missing("tips_unavailable")
         if (
             actor_id != user_id
             and not settings.public_consent

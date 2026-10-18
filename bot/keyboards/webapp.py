@@ -2,6 +2,8 @@ from urllib.parse import urlsplit, urlunsplit
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
+from shared.core.i18n import translate
+
 
 def app_url(base: str, route: str = "/") -> str:
     parsed = urlsplit(base)
@@ -11,9 +13,14 @@ def app_url(base: str, route: str = "/") -> str:
     return urlunsplit((parsed.scheme, parsed.netloc, parsed.path.rstrip("/") + safe_route, "", ""))
 
 
-def open_app(base: str, route: str = "/", label: str = "Открыть FirstCase") -> InlineKeyboardMarkup:
+def open_app(base: str, route: str = "/", label: str | None = None) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=label, web_app=WebAppInfo(url=app_url(base, route)))]
+            [
+                InlineKeyboardButton(
+                    text=label or translate("bot.open_app"),
+                    web_app=WebAppInfo(url=app_url(base, route)),
+                )
+            ]
         ]
     )

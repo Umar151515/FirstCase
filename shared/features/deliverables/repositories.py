@@ -13,3 +13,11 @@ class DeliverableRepository(Repository[Deliverable]):
             select(func.max(Deliverable.version)).where(Deliverable.order_id == order_id)
         )
         return (version or 0) + 1
+
+    async def latest(self, order_id: int):
+        return await self.session.scalar(
+            select(Deliverable)
+            .where(Deliverable.order_id == order_id)
+            .order_by(Deliverable.version.desc())
+            .limit(1)
+        )

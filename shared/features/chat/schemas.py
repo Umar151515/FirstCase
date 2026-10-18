@@ -13,7 +13,7 @@ class MessageCreate(Schema):
     @model_validator(mode="after")
     def nonempty(self):
         if not self.text and not self.attachment_ids:
-            raise ValueError("Введите сообщение или прикрепите файл")
+            raise ValueError("message_or_file_required")
         return self
 
 

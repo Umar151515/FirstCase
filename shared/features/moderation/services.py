@@ -23,7 +23,7 @@ class ModerationService:
     async def user(self, admin_id, identifier, data):
         user = await UserRepository(self.session).get(identifier, lock=True)
         if user.id == admin_id or user.role == "admin":
-            raise forbidden("Нельзя блокировать администратора этим действием")
+            raise forbidden("admin_block_forbidden")
         user.status = data.status
         await self.repository.add(
             admin_id=admin_id,
@@ -62,7 +62,7 @@ class ModerationService:
         await NotificationService(self.session).notify(
             report.reporter_id,
             "report_decision",
-            "Обновление по вашей жалобе",
+            "report_updated",
             f"/reports/{report.id}",
             data.moderator_comment,
         )
@@ -88,7 +88,7 @@ class ModerationService:
         if report.status not in ("pending", "in_review") and (
             not order or order.status != "disputed"
         ):
-            raise forbidden("Доступ к доказательствам требует открытой жалобы или спора")
+            raise forbidden("evidence_access_forbidden")
         await self.repository.add(
             admin_id=admin_id,
             target_type="report",
@@ -111,6 +111,10 @@ class ModerationService:
             )
             files.update({f.id: f for f in order_files})
         if case:
+            if case.cover_attachment_id:
+                files[case.cover_attachment_id] = await AttachmentRepository(self.session).get(
+                    case.cover_attachment_id
+                )
             for evidence in await PortfolioService(self.session).repository.evidence(case.id):
                 if evidence.attachment_id:
                     files[evidence.attachment_id] = await AttachmentRepository(self.session).get(
@@ -129,7 +133,7 @@ class ModerationService:
     async def resolve_dispute(self, admin_id, identifier, action, reason):
         order = await OrderService(self.session).repository.get(identifier, lock=True)
         if order.status != "disputed":
-            raise conflict("Заказ не находится в споре")
+            raise conflict("order_not_disputed")
         new_state = "cancelled" if action == "cancel" else "in_progress"
         order.status = new_state
         if action == "cancel":
@@ -149,7 +153,7 @@ class ModerationService:
             await NotificationService(self.session).notify(
                 user_id,
                 "dispute_decision",
-                "Администратор рассмотрел спор",
+                "dispute_decided",
                 f"/orders/{order.id}",
                 reason,
             )

@@ -5,6 +5,7 @@ from pydantic import AwareDatetime
 
 from backend.api.dependencies import CurrentUser, OptionalUser, Session
 from shared.core.security import unauthorized
+from shared.features.ai import AiPolicy
 from shared.features.applications.models import Application
 from shared.features.applications.schemas import ApplicationCreate, ApplicationOut
 from shared.features.applications.services import ApplicationService
@@ -22,7 +23,7 @@ async def categories(session: Session):
     items, total = await CategoryRepository(session).list(
         Category.active.is_(True), limit=100, order_by=Category.sort_order
     )
-    return {"items": items, "total": total}
+    return {"items": [TaskService.category_view(item) for item in items], "total": total}
 
 
 @router.get("/tasks", response_model=Page[TaskOut])
@@ -31,6 +32,7 @@ async def tasks(
     user: OptionalUser,
     q: str = Query(default="", max_length=100),
     category_id: int | None = None,
+    ai_policy: AiPolicy | None = None,
     status: Literal["published", "assigned", "completed", "cancelled"] | None = None,
     city: str | None = None,
     sort: Literal["newest", "oldest", "deadline"] = "newest",
@@ -41,7 +43,7 @@ async def tasks(
     limit: int = Query(default=20, ge=1, le=100),
 ):
     if mine and not user:
-        raise unauthorized("Войдите для просмотра своих задач")
+        raise unauthorized("login_own_tasks")
     service = TaskService(session)
     items, total = await service.catalog(
         q,
@@ -54,6 +56,7 @@ async def tasks(
         limit,
         created_after=created_after,
         created_before=created_before,
+        ai_policy=ai_policy,
     )
     return {"items": [await service.view(t) for t in items], "total": total}
 

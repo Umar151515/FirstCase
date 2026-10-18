@@ -8,6 +8,8 @@ from aiogram.types import TelegramObject
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from shared.core.config import Settings
+from shared.core.exceptions import DomainError
+from shared.core.i18n import language, locale
 from shared.features.auth.services import AuthService
 from shared.features.tasks.services import TaskService
 from shared.features.users.services import UserService
@@ -25,6 +27,11 @@ class ServiceMiddleware(BaseMiddleware):
         data: dict[str, Any],
     ) -> Any:
         async with self.factory() as session:
+            sender = data.get("event_from_user") or getattr(event, "from_user", None)
+            user = await UserService(session).get_by_telegram(sender.id) if sender else None
+            token = locale.set(
+                user.language if user else language(getattr(sender, "language_code", None))
+            )
             data.update(
                 settings=self.settings,
                 auth_service=AuthService(session, self.settings),
@@ -35,6 +42,14 @@ class ServiceMiddleware(BaseMiddleware):
                 result = await handler(event, data)
                 await session.commit()
                 return result
+            except DomainError as exc:
+                await session.rollback()
+                if hasattr(event, "answer"):
+                    await event.answer(exc.message, parse_mode=None)
+                    return None
+                raise
             except Exception:
                 await session.rollback()
                 raise
+            finally:
+                locale.reset(token)

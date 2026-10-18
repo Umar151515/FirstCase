@@ -19,7 +19,7 @@ class BodyLimitMiddleware:
             if message["type"] == "http.request":
                 received += len(message.get("body", b""))
                 if received > self.maximum:
-                    raise HTTPException(413, "Запрос превышает допустимый размер")
+                    raise HTTPException(413, "request_too_large")
             return message
 
         await self.app(scope, bounded_receive, send)

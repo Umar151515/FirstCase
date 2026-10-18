@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from bot.keyboards.webapp import open_app
 from shared.core.config import Settings
 from shared.core.database import utcnow
+from shared.core.i18n import translate
 from shared.models import Notification, User
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,7 @@ class PendingDelivery:
     body: str
     link: str
     attempts: int
+    language: str = "ru"
 
 
 async def claim_pending(factory: async_sessionmaker[AsyncSession]) -> list[PendingDelivery]:
@@ -36,7 +38,7 @@ async def claim_pending(factory: async_sessionmaker[AsyncSession]) -> list[Pendi
     async with factory() as session, session.begin():
         rows = (
             await session.execute(
-                select(Notification, User.telegram_id)
+                select(Notification, User.telegram_id, User.language)
                 .join(User, User.id == Notification.user_id)
                 .where(
                     Notification.delivered_at.is_(None),
@@ -52,17 +54,18 @@ async def claim_pending(factory: async_sessionmaker[AsyncSession]) -> list[Pendi
             )
         ).all()
         pending = []
-        for notification, telegram_id in rows:
+        for notification, telegram_id, language in rows:
             notification.claim_until = now + timedelta(minutes=5)
             notification.attempts += 1
             pending.append(
                 PendingDelivery(
                     notification.id,
                     telegram_id,
-                    notification.title,
+                    translate(notification.title, language),
                     notification.body,
                     notification.link,
                     notification.attempts,
+                    language,
                 )
             )
         return pending
@@ -102,7 +105,9 @@ async def deliver_batch(
                 text=f"{delivery.title}\n\n{delivery.body}"[:4000],
                 parse_mode=None,
                 reply_markup=open_app(
-                    settings.public_webapp_url, delivery.link, "Открыть в FirstCase"
+                    settings.public_webapp_url,
+                    delivery.link,
+                    translate("bot.open_in_app", delivery.language),
                 ),
             )
         except Exception as exc:

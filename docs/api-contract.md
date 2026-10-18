@@ -1,19 +1,22 @@
 # FirstCase API v1
 
-Base `/api/v1`. JSON snake_case, integer IDs, timestamps ISO8601 UTC. Protected calls use `Authorization: Bearer <access_token>`. Collections use `{items: [...], total: N}`; query `offset=0&limit=20` (1..100). Errors `{error:{code,message,details?}}`. 401 invalid auth, 403 forbidden, 404 unavailable, 409 invalid state/duplicate, 422 validation. Public resources are readable without auth unless stated otherwise.
+Base `/api/v1`. JSON snake_case, integer IDs, timestamps ISO8601 UTC. Protected calls use `Authorization: Bearer <access_token>`. Collections use `{items: [...], total: N}`; query `offset=0&limit=20` (1..100). Errors `{error:{code,key,message,details?}}`: `key` is a stable message key, `message` is localized using `Accept-Language: ru|ky` (Russian fallback). Validation details contain machine-readable `loc` and `type`; they never echo private input or raw library messages. 401 invalid auth, 403 forbidden, 404 unavailable, 409 invalid state/duplicate, 422 validation. Category names and system notification titles use the same request locale; user-written content stays as submitted. Public resources are readable without auth unless stated otherwise.
 
 ## Identity and profiles
 
 - `GET /config` → `{mode: "demo"|"production"}`.
 - `POST /auth/telegram` `{init_data: string}` → `{access_token,token_type:"bearer",user:User}`.
 - **Demo only, routes absent in production:** `GET /auth/demo-users` → collection User; `POST /auth/demo-login` `{user_id:int}` → token response above.
-- `GET /auth/me`, `GET /users/me` → own User; `PATCH /users/me` `{display_name?,bio?,specialization?,skills?:string[],city?,work_links?:https-url[],onboarding_completed?:bool}` → User.
+- `GET /auth/me`, `GET /users/me` → own User; `PATCH /users/me` `{display_name?,bio?,specialization?,skills?:string[],city?,work_links?:https-url[],onboarding_completed?:bool,language?:"ru"|"ky",avatar_attachment_id?:int|null}` → User. Upload an image first, then claim its ID. `null` removes the current photo. Arbitrary avatar URLs are never accepted. Custom photos survive Telegram sign-in; Telegram remains the fallback for users without a custom photo. Language is persisted for bot replies and delivery; Telegram language initializes new profiles only.
 - `GET /users?q=&city=&specialization=` → collection PublicUser; `GET /users/{id}` → PublicUser.
-- PublicUser: `{id,display_name,avatar_url:null|string,bio,specialization,skills:[],city,work_links:[],rating:float,review_count:int,completed_orders:int,verified_cases:int,created_at}`. No Telegram identity/username in public DTOs.
+- PublicUser: `{id,display_name,avatar_url:null|string,avatar_attachment_id:null|int,bio,specialization,skills:[],city,work_links:[],rating:float,review_count:int,completed_orders:int,verified_cases:int,created_at}`. Custom `avatar_url` resolves to `/api/v1/uploads/{id}`. No Telegram identity/username in public DTOs. User additionally includes saved `language: "ru"|"ky"`.
 - User adds `{telegram_id:null|int,username:null|string,role:"user"|"admin",status:"active"|"blocked",is_demo:bool,onboarding_completed:bool}`.
 - `GET /categories` → collection `{id,name,slug,sort_order}`.
 
 ## Tasks and applications
+
+- Task AI policy `ai_policy`: `no_ai` (no AI), `consultation` (advice only, human creates the material), `ai_allowed` (AI-created material permitted). Default `ai_allowed`. Create/update accept this field; `GET /tasks?ai_policy=` filters it. The value is copied into Order on assignment and cannot change afterward.
+- Task create/update additionally accepts `cover_attachment_id:int|null`; `null` removes a cover. It must be an owned image, distinct from private order/report/profile assets. The backend binds it to the task automatically; it may also be included in `attachment_ids`. Task DTO includes `cover_attachment_id` and `cover:Attachment|null`. Only the selected cover is public, while the task is published and visible and its customer is active. Other task files remain private.
 
 - Task: `{id,customer_id,customer:PublicUser,category_id,category:{id,name,slug,sort_order},title,description,expected_result,deadline,max_revisions,payment_type:"free"|"tips",city,status:"published"|"assigned"|"completed"|"cancelled",is_hidden,application_count,attachment_ids:[],created_at,updated_at}`.
 - `GET /tasks?q=&category_id=&status=&city=&sort=newest|oldest|deadline&mine=false&created_after=&created_before=` → collection Task. `mine=true` requires auth. Date bounds are optional timezone-aware ISO8601 timestamps (inclusive).
@@ -25,6 +28,8 @@ Base `/api/v1`. JSON snake_case, integer IDs, timestamps ISO8601 UTC. Protected 
 - `GET /applications?mine=true` → own applications; `POST /applications/{id}/accept` → Order (atomic assignment); `POST /applications/{id}/reject` → Application; `POST /applications/{id}/withdraw` → Application.
 
 ## Orders, chat, results, reviews
+
+- Order additionally returns the agreed `ai_policy`. `POST /orders/{id}/submit` accepts `ai_usage:"no_ai"|"consultation"|"ai_assisted"` (default `no_ai`) and `ai_disclosure:string` (max 2000). Consultation and AI-created material require a disclosure. Violations of the agreed policy return 422 `ai_policy_violation`; missing disclosure returns `ai_disclosure_required`. Every versioned deliverable includes these fields.
 
 - Order: `{id,task_id,task:Task,customer_id,performer_id,customer:PublicUser,performer:PublicUser,status,revisions_used,max_revisions,created_at,accepted_at:null|date,completed_at:null|date}`.
 - statuses: `assigned → in_progress → submitted → revision_requested → submitted → accepted_pending_review → completed`. Customer review closes order. Cancellation before acceptance; dispute by either participant before completion.
@@ -39,6 +44,9 @@ Base `/api/v1`. JSON snake_case, integer IDs, timestamps ISO8601 UTC. Protected 
 
 ## Portfolio privacy
 
+- Case create/edit additionally accepts `ai_usage` and `ai_disclosure` for ordinary work. A verified case always derives both from the final accepted deliverable; editing them returns 403. Case DTO includes both fields, but verified free-text disclosure is returned only to the owner or audited moderator because it may contain private source details. Public verified cases expose only the usage enum.
+- Case create/edit and visibility updates accept `cover_attachment_id:int|null`, returned as `cover_attachment_id` and `cover:Attachment|null`. Anonymous cases reject covers. Ordinary cases may claim an owned image. Verified covers must be an image from the source task/order or a fresh owned image bound to that private case; publication requires customer consent for the exact attachment ID, including freshly uploaded covers. A customer may consent to those case-bound files through the existing consent endpoint. Revocation immediately removes the cover from public DTOs and public downloads. A visibility update replaces selected evidence and cover (`null`/omission removes the cover).
+
 - `GET /portfolio?user_id=&mine=false` → collection Case; `GET /portfolio/{id}` → Case. Private only owner. Public DTOs never expose source order/customer IDs unless explicitly consented.
 - `POST /portfolio` `{order_id?:int,title,description,result,visibility:"private"|"anonymous"|"public",attachment_ids?:int[],message_ids?:int[],show_customer?:bool}` → Case 201. Without order is an ordinary unverified work. Verified requires completed order and performer identity.
 - `PATCH /portfolio/{id}` `{title?,description?,result?}` → Case. `PATCH /portfolio/{id}/visibility` `{visibility,show_customer?:bool,attachment_ids?:int[],message_ids?:int[]}` → Case.
@@ -49,6 +57,7 @@ Base `/api/v1`. JSON snake_case, integer IDs, timestamps ISO8601 UTC. Protected 
 
 - `POST /uploads` multipart `file` → Attachment 201 `{id,filename,mime_type,size,url:"/api/v1/uploads/{id}"}`. Auth required. Images PNG/JPEG/WebP, PDF, text/plain and ZIP up to configured limit; bytes checked.
 - `GET /uploads/{id}` → protected binary. Owner or participants of linked object only; public evidence only with live consent. No static upload directory.
+- `GET /uploads/{id}/metadata` → Attachment using exactly the same access checks as binary download. Images are validated and re-encoded to remove EXIF/GPS metadata. Current custom avatars are public only for active users; replacing/removing an avatar revokes the previous public access. Selecting an avatar or cover never grants access to the owner's other attachments. Public case media require visible case and active owner.
 - `GET /tips/settings`, `PUT /tips/settings` `{payment_method,qr_attachment_id:null|int,payment_url:null|https-url,enabled:bool,public_consent:bool}` → settings. Owner only; QR upload must belong to owner and be image.
 - `GET /users/{id}/tips` → enabled settings only with explicit public consent or completed-order customer; no transfer confirmation/payment endpoints.
 

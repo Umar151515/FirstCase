@@ -1,6 +1,7 @@
 from sqlalchemy.dialects.postgresql import insert
 
 from shared.core.exceptions import forbidden, missing
+from shared.core.i18n import language, translate
 from shared.core.security import create_access_token, validate_telegram_init_data
 from shared.features.auth.repositories import AuthRepository
 from shared.features.auth.schemas import TokenResponse
@@ -16,10 +17,9 @@ class AuthService:
         self.users = UserService(session)
 
     async def upsert_telegram(self, data: dict) -> User:
-        display_name = (
-            " ".join(str(data.get(k) or "") for k in ("first_name", "last_name")).strip()[:100]
-            or "Пользователь"
-        )
+        display_name = " ".join(
+            str(data.get(k) or "") for k in ("first_name", "last_name")
+        ).strip()[:100] or translate("user_default_name", language(data.get("language_code")))
         role = "admin" if data["id"] in self.settings.admin_ids else "user"
         avatar = data.get("photo_url")
         if avatar and not str(avatar).startswith("https://"):
@@ -30,8 +30,9 @@ class AuthService:
             "display_name": display_name,
             "avatar_url": avatar,
             "role": role,
+            "language": language(data.get("language_code")),
         }
-        updates = {k: v for k, v in values.items() if k not in ("telegram_id", "role")}
+        updates = {k: v for k, v in values.items() if k not in ("telegram_id", "role", "language")}
         if role == "admin":
             updates["role"] = "admin"
         stmt = (
@@ -45,7 +46,7 @@ class AuthService:
         )
         user = (await self.session.scalars(stmt.execution_options(populate_existing=True))).one()
         if user.status != "active" or (self.settings.app_mode == "production" and user.is_demo):
-            raise forbidden("Аккаунт заблокирован")
+            raise forbidden("account_blocked")
         return user
 
     async def login_telegram(self, raw: str) -> TokenResponse:
@@ -59,7 +60,7 @@ class AuthService:
             raise missing()
         user = await self.repository.get(identifier)
         if not user.is_demo or user.status != "active":
-            raise forbidden("Демонстрационный аккаунт недоступен")
+            raise forbidden("demo_account_unavailable")
         return await self.token(user)
 
     async def token(self, user: User) -> TokenResponse:

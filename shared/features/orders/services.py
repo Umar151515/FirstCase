@@ -1,5 +1,6 @@
 from shared.core.database import utcnow
 from shared.core.exceptions import conflict, forbidden, missing
+from shared.features.ai import validate_ai_usage
 from shared.features.deliverables.repositories import DeliverableRepository
 from shared.features.notifications.services import NotificationService
 from shared.features.orders.repositories import OrderRepository
@@ -35,6 +36,7 @@ class OrderService:
                         "status",
                         "revisions_used",
                         "max_revisions",
+                        "ai_policy",
                         "created_at",
                         "accepted_at",
                         "completed_at",
@@ -75,12 +77,12 @@ class OrderService:
         }
         allowed, required_role, new_status = transitions[action]
         if required_role not in ("either", actor_role):
-            raise forbidden("Это действие доступно другому участнику заказа")
+            raise forbidden("order_other_participant")
         if order.status not in allowed:
-            raise conflict("Недопустимый переход состояния заказа")
+            raise conflict("invalid_order_transition")
         if action == "request_revision":
             if order.revisions_used >= order.max_revisions:
-                raise conflict("Согласованное количество правок исчерпано")
+                raise conflict("revisions_exhausted")
             order.revisions_used += 1
         if action == "accept":
             order.accepted_at = utcnow()
@@ -93,11 +95,11 @@ class OrderService:
         )
         other_id = order.performer_id if actor_role == "customer" else order.customer_id
         titles = {
-            "start": "Исполнитель приступил к работе",
-            "accept": "Работа принята",
-            "request_revision": "Заказчик запросил правки",
-            "cancel": "Заказ отменён",
-            "dispute": "По заказу открыт спор",
+            "start": "work_started",
+            "accept": "work_accepted",
+            "request_revision": "revision_requested",
+            "cancel": "order_cancelled",
+            "dispute": "dispute_opened",
         }
         await NotificationService(self.session).notify(
             other_id, new_status, titles[action], f"/orders/{order.id}"
@@ -106,7 +108,7 @@ class OrderService:
             await NotificationService(self.session).notify(
                 order.customer_id,
                 "review_required",
-                "Оставьте отзыв для завершения заказа",
+                "review_required",
                 f"/orders/{order.id}",
             )
         await self.session.flush()
@@ -115,9 +117,10 @@ class OrderService:
     async def submit(self, identifier: int, actor_id: int, data):
         order = await self.participant(identifier, actor_id, lock=True)
         if actor_id != order.performer_id:
-            raise forbidden("Результат отправляет исполнитель")
+            raise forbidden("performer_submits")
         if order.status not in {"assigned", "in_progress", "revision_requested"}:
-            raise conflict("Сейчас нельзя сдать результат")
+            raise conflict("submit_unavailable")
+        validate_ai_usage(order.ai_policy, data.ai_usage, data.ai_disclosure)
         from shared.features.uploads.services import UploadService
 
         await UploadService(self.session).bind(data.attachment_ids, actor_id, order_id=order.id)
@@ -131,7 +134,7 @@ class OrderService:
         order.status = "submitted"
         await self.repository.event(order.id, actor_id, "submitted", {"version": version})
         await NotificationService(self.session).notify(
-            order.customer_id, "submitted", "Исполнитель отправил результат", f"/orders/{order.id}"
+            order.customer_id, "submitted", "work_submitted", f"/orders/{order.id}"
         )
         await self.session.flush()
         return order

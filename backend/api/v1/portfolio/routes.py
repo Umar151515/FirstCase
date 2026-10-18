@@ -20,7 +20,7 @@ async def portfolio(
     limit: int = Query(default=20, ge=1, le=100),
 ):
     if mine and not user:
-        raise unauthorized("Войдите для просмотра своих кейсов")
+        raise unauthorized("login_own_cases")
     owner_id = user.id if mine else user_id
     own = user and owner_id == user.id
     conditions = (

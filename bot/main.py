@@ -13,6 +13,7 @@ from bot.middleware import ServiceMiddleware
 from bot.outbox import delivery_loop
 from shared.core.config import get_settings
 from shared.core.database import engine, session_factory
+from shared.core.i18n import translate
 from shared.core.logging import configure_logging
 
 
@@ -34,14 +35,19 @@ async def main() -> None:
     dispatcher.include_router(router)
     worker = None
     try:
-        await bot.set_my_commands(
-            [
-                BotCommand(command="start", description="Открыть FirstCase"),
-                BotCommand(command="help", description="Как работает сервис"),
-                BotCommand(command="profile", description="Мой профиль"),
-                BotCommand(command="tasks", description="Найти заказ"),
-            ]
-        )
+        for language in (None, "ru", "ky"):
+            await bot.set_my_commands(
+                [
+                    BotCommand(command=command, description=translate(key, language))
+                    for command, key in (
+                        ("start", "bot.open_app"),
+                        ("help", "bot.help_description"),
+                        ("profile", "bot.profile"),
+                        ("tasks", "bot.tasks"),
+                    )
+                ],
+                language_code=language,
+            )
         await bot.set_chat_menu_button(
             menu_button=MenuButtonWebApp(
                 text="FirstCase", web_app=WebAppInfo(url=app_url(settings.public_webapp_url))

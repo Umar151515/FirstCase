@@ -7,7 +7,7 @@ import shutil
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from sqlalchemy import func, select, text
+from sqlalchemy import func, select, text, update
 
 from scripts.db_safety import ADVISORY_LOCK, SEED_KEY, SEED_VERSION, check_demo_database
 from scripts.demo_data import CATEGORIES, TASKS, USERS
@@ -76,6 +76,24 @@ def result_bytes(title: str, expected: str) -> bytes:
     return f"FirstCase — демонстрационный результат\n\n{title}\n\n{expected}\n\nЭто безопасный пример файла, загруженного исполнителем в заказ.\n".encode()
 
 
+async def repair_demo_notifications(session) -> None:
+    """Retain task titles while removing legacy Russian-only system wrappers."""
+    prefix = "Заказчик выбрал ваш отклик: "
+    await session.execute(
+        update(Notification)
+        .where(Notification.type == "application_accepted", Notification.body.startswith(prefix))
+        .values(title="performer_selected", body=func.substr(Notification.body, len(prefix) + 1))
+    )
+    await session.execute(
+        update(Notification)
+        .where(
+            Notification.type == "new_application",
+            Notification.body == "Исполнитель предложил помочь с вашим проектом.",
+        )
+        .values(title="new_application", body="")
+    )
+
+
 async def seed_demo() -> dict[str, int]:
     settings = get_settings()
     async with session_factory() as session, session.begin():
@@ -86,6 +104,7 @@ async def seed_demo() -> dict[str, int]:
             if marker.value != SEED_VERSION:
                 raise RuntimeError("A different demo seed exists; run the guarded demo reset first")
             repair_demo_assets(list(await session.scalars(select(Attachment.storage_key))))
+            await repair_demo_notifications(session)
             result = await counts(session)
             print(json.dumps({"seed": "already-present", **result}, ensure_ascii=False))
             return result
@@ -159,6 +178,7 @@ async def seed_demo() -> dict[str, int]:
                 deadline=now + timedelta(days=3 + index % 9),
                 max_revisions=2,
                 payment_type="free" if index % 4 == 0 else "tips",
+                ai_policy=("no_ai", "consultation", "ai_allowed")[index % 3],
                 city="Бишкек",
                 status="completed"
                 if index < 3
@@ -202,6 +222,7 @@ async def seed_demo() -> dict[str, int]:
                 performer_id=users[performer].id,
                 status=status,
                 max_revisions=2,
+                ai_policy=task.ai_policy,
                 revisions_used=1 if status == "revision_requested" else 0,
                 accepted_at=now - timedelta(days=5)
                 if index < 3
@@ -347,8 +368,8 @@ async def seed_demo() -> dict[str, int]:
                 Notification(
                     user_id=order.performer_id,
                     type="application_accepted",
-                    title="Вас выбрали исполнителем",
-                    body=f"Заказчик выбрал ваш отклик: {title}",
+                    title="performer_selected",
+                    body=title,
                     link=f"/orders/{order.id}",
                     delivered_at=now,
                 )
@@ -397,8 +418,8 @@ async def seed_demo() -> dict[str, int]:
             Notification(
                 user_id=users[0].id,
                 type="new_application",
-                title="Новый отклик на вашу задачу",
-                body="Исполнитель предложил помочь с вашим проектом.",
+                title="new_application",
+                body="",
                 link=f"/tasks/{seeded_tasks[13].id}",
                 delivered_at=now,
             )

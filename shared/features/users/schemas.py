@@ -10,6 +10,7 @@ class PublicUser(Schema):
     id: int
     display_name: str
     avatar_url: str | None
+    avatar_attachment_id: int | None
     bio: str
     specialization: str
     skills: list[str]
@@ -23,6 +24,7 @@ class PublicUser(Schema):
 
 
 class UserOut(PublicUser):
+    language: Literal["ru", "ky"]
     telegram_id: int | None
     username: str | None
     role: Literal["user", "admin"]
@@ -32,6 +34,9 @@ class UserOut(PublicUser):
 
 
 class ProfileUpdate(PatchSchema):
+    nullable_fields = frozenset({"avatar_attachment_id"})
+    avatar_attachment_id: int | None = Field(default=None, gt=0)
+    language: Literal["ru", "ky"] | None = None
     display_name: str | None = Field(default=None, min_length=2, max_length=100)
     bio: str | None = Field(default=None, max_length=2000)
     specialization: str | None = Field(default=None, max_length=100)
@@ -44,5 +49,5 @@ class ProfileUpdate(PatchSchema):
     @classmethod
     def valid_skills(cls, value):
         if value is not None and any(not s.strip() or len(s) > 60 for s in value):
-            raise ValueError("Название навыка должно содержать 1–60 символов")
+            raise ValueError("invalid_skills")
         return value

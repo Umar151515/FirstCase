@@ -3,7 +3,9 @@ from typing import Literal
 
 from pydantic import AwareDatetime, Field
 
+from shared.features.ai import AiPolicy
 from shared.features.common import PatchSchema, Schema
+from shared.features.uploads.schemas import AttachmentOut
 from shared.features.users.schemas import PublicUser
 
 
@@ -22,11 +24,16 @@ class TaskCreate(Schema):
     deadline: AwareDatetime
     max_revisions: int = Field(default=2, ge=0, le=10)
     payment_type: Literal["free", "tips"] = "tips"
+    ai_policy: AiPolicy = "ai_allowed"
+    cover_attachment_id: int | None = Field(default=None, gt=0)
     city: str = Field(default="Бишкек", max_length=100)
     attachment_ids: list[int] = Field(default_factory=list, max_length=10)
 
 
 class TaskUpdate(PatchSchema):
+    nullable_fields = frozenset({"cover_attachment_id"})
+    ai_policy: AiPolicy | None = None
+    cover_attachment_id: int | None = Field(default=None, gt=0)
     category_id: int | None = Field(default=None, gt=0)
     title: str | None = Field(default=None, min_length=5, max_length=150)
     description: str | None = Field(default=None, min_length=20, max_length=10000)
@@ -50,6 +57,9 @@ class TaskOut(Schema):
     deadline: datetime
     max_revisions: int
     payment_type: str
+    ai_policy: AiPolicy
+    cover_attachment_id: int | None
+    cover: AttachmentOut | None
     city: str
     status: str
     is_hidden: bool

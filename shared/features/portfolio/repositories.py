@@ -1,7 +1,8 @@
-from sqlalchemy import delete, select
+from sqlalchemy import delete, or_, select
 
 from shared.features.common import Repository
 from shared.features.portfolio.models import PortfolioCase, PortfolioEvidence, PrivacyConsent
+from shared.features.users.models import User
 
 
 class PortfolioRepository(Repository[PortfolioCase]):
@@ -41,11 +42,17 @@ class PortfolioRepository(Repository[PortfolioCase]):
         return (
             await self.session.scalars(
                 select(PortfolioCase)
-                .join(PortfolioEvidence, PortfolioEvidence.case_id == PortfolioCase.id)
+                .outerjoin(PortfolioEvidence, PortfolioEvidence.case_id == PortfolioCase.id)
+                .join(User, User.id == PortfolioCase.owner_id)
                 .where(
-                    PortfolioEvidence.attachment_id == attachment_id,
+                    or_(
+                        PortfolioEvidence.attachment_id == attachment_id,
+                        PortfolioCase.cover_attachment_id == attachment_id,
+                    ),
                     PortfolioCase.visibility != "private",
                     PortfolioCase.is_hidden.is_(False),
+                    User.status == "active",
                 )
+                .distinct()
             )
         ).all()

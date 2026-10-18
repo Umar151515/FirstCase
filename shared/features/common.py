@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Annotated, Any
+from typing import Annotated, Any, ClassVar
 
 from pydantic import BaseModel, ConfigDict, HttpUrl, UrlConstraints, model_validator
 from sqlalchemy import func, select
@@ -17,11 +17,15 @@ HttpsUrl = Annotated[HttpUrl, UrlConstraints(allowed_schemes=["https"])]
 
 
 class PatchSchema(Schema):
+    nullable_fields: ClassVar[frozenset[str]] = frozenset()
+
     @model_validator(mode="before")
     @classmethod
     def disallow_explicit_null(cls, value):
-        if isinstance(value, dict) and any(v is None for v in value.values()):
-            raise ValueError("Передавайте только изменяемые поля; null не допускается")
+        if isinstance(value, dict) and any(
+            v is None and k not in cls.nullable_fields for k, v in value.items()
+        ):
+            raise ValueError("patch_null_forbidden")
         return value
 
 

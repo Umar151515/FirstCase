@@ -17,11 +17,11 @@ class ReviewService:
         customer_review = actor_id == order.customer_id
         allowed = {"accepted_pending_review", "completed"} if customer_review else {"completed"}
         if order.status not in allowed:
-            raise conflict("Отзыв можно оставить только после принятия работы")
+            raise conflict("review_after_acceptance")
         if customer_review and len(data.comment.strip()) < 5:
-            raise DomainError("Добавьте текст отзыва не короче 5 символов", 422, "validation_error")
+            raise DomainError("review_comment_required", 422, "validation_error")
         if await self.repository.for_author(order_id, actor_id):
-            raise conflict("Вы уже оставили отзыв по этому заказу")
+            raise conflict("review_exists")
         recipient = order.performer_id if customer_review else order.customer_id
         review = await self.repository.add(
             order_id=order_id, author_id=actor_id, recipient_id=recipient, **data.model_dump()
@@ -33,7 +33,7 @@ class ReviewService:
             task.status = "completed"
             await orders.repository.event(order_id, actor_id, "completed", {"review_id": review.id})
         await NotificationService(self.session).notify(
-            recipient, "new_review", "Вы получили отзыв", f"/orders/{order_id}"
+            recipient, "new_review", "new_review", f"/orders/{order_id}"
         )
         await self.session.flush()
         return review

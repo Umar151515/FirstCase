@@ -19,9 +19,11 @@ async def notifications(
     items, total = await NotificationService(session).repository.list(
         Notification.user_id == user.id, offset=offset, limit=limit
     )
-    return {"items": items, "total": total}
+    return {"items": [NotificationService.view(item) for item in items], "total": total}
 
 
 @router.post("/{identifier}/read", response_model=NotificationOut)
 async def read(identifier: int, user: CurrentUser, session: Session):
-    return await NotificationService(session).mark_read(identifier, user.id)
+    return NotificationService.view(
+        await NotificationService(session).mark_read(identifier, user.id)
+    )

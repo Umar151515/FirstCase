@@ -6,7 +6,7 @@ import zipfile
 from pathlib import Path, PureWindowsPath
 from uuid import uuid4
 
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 from shared.core.exceptions import DomainError, missing
 
@@ -28,7 +28,7 @@ def safe_filename(value: str | None) -> str:
 
 def validate_bytes(data: bytes, mime_type: str):
     if mime_type not in ALLOWED_MIMES:
-        raise DomainError("Этот тип файла не поддерживается", 422, "invalid_file")
+        raise DomainError("unsupported_file", 422, "invalid_file")
     try:
         if mime_type.startswith("image/"):
             with warnings.catch_warnings():
@@ -57,9 +57,27 @@ def validate_bytes(data: bytes, mime_type: str):
         Image.DecompressionBombError,
         Image.DecompressionBombWarning,
     ) as exc:
-        raise DomainError(
-            "Содержимое файла не соответствует его типу", 422, "invalid_file"
-        ) from exc
+        raise DomainError("file_type_mismatch", 422, "invalid_file") from exc
+
+
+def sanitize_image(data: bytes, mime_type: str) -> bytes:
+    """Strip EXIF/GPS and embedded metadata before an upload can become public."""
+    with Image.open(io.BytesIO(data)) as original:
+        oriented = ImageOps.exif_transpose(original)
+        mode = (
+            "RGBA"
+            if mime_type != "image/jpeg"
+            and ("A" in oriented.getbands() or "transparency" in oriented.info)
+            else "RGB"
+        )
+        picture = Image.new(mode, oriented.size)
+        picture.paste(oriented.convert(mode))
+        output = io.BytesIO()
+        picture.save(
+            output,
+            format={"image/png": "PNG", "image/jpeg": "JPEG", "image/webp": "WEBP"}[mime_type],
+        )
+        return output.getvalue()
 
 
 class LocalStorage:

@@ -11,7 +11,7 @@ from shared.core.config import Settings
 from shared.core.exceptions import DomainError
 
 
-def unauthorized(message: str = "Требуется авторизация") -> DomainError:
+def unauthorized(message: str = "unauthorized") -> DomainError:
     return DomainError(message, 401, "unauthorized")
 
 
@@ -19,7 +19,7 @@ def validate_telegram_init_data(
     raw: str, bot_token: str, max_age: int = 3600, now: int | None = None
 ) -> dict:
     if not raw or not bot_token or len(raw) > 16384:
-        raise unauthorized("Отсутствуют данные Telegram")
+        raise unauthorized("telegram_data_missing")
     try:
         pairs = parse_qsl(raw, strict_parsing=True, keep_blank_values=True)
         data = dict(pairs)
@@ -40,7 +40,7 @@ def validate_telegram_init_data(
             raise ValueError("Invalid user")
         return user
     except (KeyError, ValueError, TypeError, OverflowError) as exc:
-        raise unauthorized("Недействительные или просроченные данные Telegram") from exc
+        raise unauthorized("telegram_data_invalid") from exc
 
 
 def create_access_token(user_id: int, settings: Settings) -> str:
@@ -76,4 +76,4 @@ def decode_access_token(token: str, settings: Settings) -> int:
             raise ValueError("Invalid ID")
         return value
     except (jwt.PyJWTError, ValueError, TypeError) as exc:
-        raise unauthorized("Сессия истекла. Войдите снова") from exc
+        raise unauthorized("session_expired") from exc

@@ -9,6 +9,9 @@ from shared.core.database import Base, TimestampMixin, utcnow
 class Order(TimestampMixin, Base):
     __tablename__ = "orders"
     __table_args__ = (
+        CheckConstraint(
+            "ai_policy IN ('no_ai','consultation','ai_allowed')", name="valid_ai_policy"
+        ),
         CheckConstraint("customer_id <> performer_id", name="different_participants"),
         CheckConstraint(
             "revisions_used >= 0 AND revisions_used <= max_revisions", name="revisions_range"
@@ -25,6 +28,9 @@ class Order(TimestampMixin, Base):
     status: Mapped[str] = mapped_column(String(32), default="assigned", index=True)
     revisions_used: Mapped[int] = mapped_column(default=0)
     max_revisions: Mapped[int] = mapped_column(default=2)
+    ai_policy: Mapped[str] = mapped_column(
+        String(16), default="ai_allowed", server_default="ai_allowed"
+    )
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 

@@ -177,9 +177,7 @@ async def evidence_download(
     admin: AdminUser,
     session: Session,
     settings: Config,
-    reason: str = Query(
-        default="Просмотр доказательства по конкретной жалобе", min_length=10, max_length=4000
-    ),
+    reason: str = Query(default="report_evidence_view", min_length=10, max_length=4000),
 ):
     result = await ModerationService(session).evidence_access(admin.id, identifier, reason)
     if attachment_id not in [a.id for a in result["attachments"]]:

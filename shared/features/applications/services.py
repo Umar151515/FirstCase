@@ -38,18 +38,18 @@ class ApplicationService:
     async def create(self, task_id: int, actor_id: int, data):
         task = await TaskRepository(self.session).get(task_id, lock=True)
         if task.customer_id == actor_id:
-            raise forbidden("Нельзя откликнуться на свою задачу")
+            raise forbidden("own_task_application")
         if task.status != "published" or task.is_hidden:
-            raise conflict("Задача уже не принимает отклики")
+            raise conflict("task_not_accepting")
         if data.proposed_deadline <= utcnow():
-            raise DomainError("Предложенный срок должен быть в будущем", 422, "validation_error")
+            raise DomainError("future_proposal_required", 422, "validation_error")
         if await self.repository.existing(task_id, actor_id):
-            raise conflict("Вы уже откликнулись на эту задачу")
+            raise conflict("application_exists")
         application = await self.repository.add(
             task_id=task_id, performer_id=actor_id, **data.model_dump()
         )
         await NotificationService(self.session).notify(
-            task.customer_id, "new_application", "Новый отклик на вашу задачу", f"/tasks/{task_id}"
+            task.customer_id, "new_application", "new_application", f"/tasks/{task_id}"
         )
         return application
 
@@ -62,10 +62,10 @@ class ApplicationService:
         if application.status == "accepted":
             return await self.repository.order_for_task(task.id)
         if task.status != "published" or task.is_hidden or application.status != "pending":
-            raise conflict("Исполнитель уже выбран или отклик недоступен")
+            raise conflict("application_unavailable")
         performer = await UserRepository(self.session).get(application.performer_id)
         if performer.status != "active":
-            raise conflict("Исполнитель заблокирован")
+            raise conflict("performer_blocked")
         application.status = "accepted"
         task.status = "assigned"
         await self.repository.reject_others(task.id, application.id)
@@ -74,12 +74,13 @@ class ApplicationService:
             customer_id=task.customer_id,
             performer_id=application.performer_id,
             max_revisions=task.max_revisions,
+            ai_policy=task.ai_policy,
         )
         await OrderRepository(self.session).event(
             order.id, actor_id, "assigned", {"application_id": application.id}
         )
         await NotificationService(self.session).notify(
-            application.performer_id, "assigned", "Вас выбрали исполнителем", f"/orders/{order.id}"
+            application.performer_id, "assigned", "performer_selected", f"/orders/{order.id}"
         )
         return order
 
@@ -90,7 +91,7 @@ class ApplicationService:
         if actor_id != (application.performer_id if withdraw else task.customer_id):
             raise forbidden()
         if application.status != "pending" or task.status != "published":
-            raise conflict("Отклик больше не ожидает решения")
+            raise conflict("application_decided")
         application.status = "withdrawn" if withdraw else "rejected"
         await self.session.flush()
         return application

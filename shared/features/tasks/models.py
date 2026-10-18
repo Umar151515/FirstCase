@@ -18,6 +18,9 @@ class Category(Base):
 class Task(TimestampMixin, Base):
     __tablename__ = "tasks"
     __table_args__ = (
+        CheckConstraint(
+            "ai_policy IN ('no_ai','consultation','ai_allowed')", name="valid_ai_policy"
+        ),
         CheckConstraint("max_revisions BETWEEN 0 AND 10", name="max_revisions_range"),
         CheckConstraint("payment_type IN ('free','tips')", name="payment_type"),
         CheckConstraint(
@@ -33,6 +36,12 @@ class Task(TimestampMixin, Base):
     deadline: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     max_revisions: Mapped[int] = mapped_column(default=2)
     payment_type: Mapped[str] = mapped_column(String(16), default="tips")
+    ai_policy: Mapped[str] = mapped_column(
+        String(16), default="ai_allowed", server_default="ai_allowed"
+    )
+    cover_attachment_id: Mapped[int | None] = mapped_column(
+        ForeignKey("attachments.id", use_alter=True, name="fk_tasks_cover_attachment")
+    )
     city: Mapped[str] = mapped_column(String(100), default="Бишкек", index=True)
     status: Mapped[str] = mapped_column(String(24), default="published", index=True)
     is_hidden: Mapped[bool] = mapped_column(default=False, index=True)
