@@ -13,7 +13,7 @@ class AppShell extends ConsumerWidget {
   final String location;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final mobile = MediaQuery.sizeOf(context).width < 820;
+    final mobile = MediaQuery.sizeOf(context).width < 1100;
     final session = ref.watch(sessionProvider);
     final user = session.value;
     final demo = ref.watch(modeProvider).value == 'demo';
