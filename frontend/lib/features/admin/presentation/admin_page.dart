@@ -1,4 +1,4 @@
-import 'dart:convert';
+import '../../../core/l10n/l10n.dart';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:forui/forui.dart';
@@ -31,9 +31,9 @@ class _AdminPageState extends ConsumerState<AdminPage> {
   @override
   Widget build(BuildContext context) {
     if (ref.watch(sessionProvider).value?.admin != true) {
-      return const StateMessage(
-        'Доступ ограничен',
-        subtitle: 'Этот раздел доступен администраторам платформы.',
+      return StateMessage(
+        context.l10n.adminRestricted,
+        subtitle: context.l10n.adminRestrictedHint,
         icon: FLucideIcons.lockKeyhole,
       );
     }
@@ -48,20 +48,20 @@ class _AdminPageState extends ConsumerState<AdminPage> {
     ).toString();
     return PageBody(
       children: [
-        const PageTitle(
-          'Пульс FirstCase',
-          subtitle: 'Управляйте платформой, помогайте участникам и защищайте доверие.',
+        PageTitle(
+          context.l10n.adminSection,
+          subtitle: context.l10n.adminSubtitle,
         ),
         ChoiceField(
-          'Администрирование',
+          context.l10n.adminSection,
           value: tab,
-          options: const {
-            'stats': 'Обзор',
-            'users': 'Пользователи',
-            'tasks': 'Задачи',
-            'orders': 'Заказы',
-            'reports': 'Жалобы',
-            'moderation-actions': 'Журнал действий',
+          options: {
+            'stats': context.l10n.adminOverview,
+            'users': context.l10n.adminUsers,
+            'tasks': context.l10n.adminTasks,
+            'orders': context.l10n.adminOrders,
+            'reports': context.l10n.adminReports,
+            'moderation-actions': context.l10n.adminAudit,
           },
           onChange: (v) => setState(() {
             tab = v;
@@ -77,13 +77,13 @@ class _AdminPageState extends ConsumerState<AdminPage> {
             builder: (data) => LayoutBuilder(
               builder: (context, constraints) {
                 final labels = {
-                  'users': 'Пользователей',
-                  'active_tasks': 'Активных задач',
-                  'completed_orders': 'Завершённых заказов',
-                  'applications': 'Откликов',
-                  'reviews': 'Отзывов',
-                  'verified_cases': 'Подтверждённых кейсов',
-                  'open_reports': 'Открытых жалоб',
+                  'users': context.l10n.statUsers,
+                  'active_tasks': context.l10n.statActiveTasks,
+                  'completed_orders': context.l10n.statCompletedOrders,
+                  'applications': context.l10n.statApplications,
+                  'reviews': context.l10n.statReviews,
+                  'verified_cases': context.l10n.statVerifiedCases,
+                  'open_reports': context.l10n.statOpenReports,
                 };
                 final columns = constraints.maxWidth > 900
                     ? 4
@@ -105,10 +105,10 @@ class _AdminPageState extends ConsumerState<AdminPage> {
                               children: [
                                 Text(
                                   '${data[entry.key] ?? 0}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 38,
                                     fontWeight: FontWeight.w800,
-                                    color: accent,
+                                    color: context.theme.colors.primary,
                                   ),
                                 ),
                                 const SizedBox(height: 12),
@@ -135,7 +135,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
                   Expanded(
                     child: FTextField(
                       control: .managed(controller: search),
-                      hint: 'Поиск пользователей',
+                      hint: context.l10n.adminSearchUsers,
                       onSubmit: (v) => setState(() {
                         query = v;
                         offset = 0;
@@ -148,40 +148,40 @@ class _AdminPageState extends ConsumerState<AdminPage> {
                       query = search.text;
                       offset = 0;
                     }),
-                    child: const Text('Найти'),
+                    child: Text(context.l10n.search),
                   ),
                 ],
               ),
             ),
           if (tab != 'moderation-actions')
             ChoiceField(
-              'Фильтр',
+              context.l10n.filter,
               value: status,
               options: {
-                '': 'Все',
+                '': context.l10n.all,
                 ...switch (tab) {
                   'users' => {
-                    'active': 'Активные',
-                    'blocked': 'Заблокированные',
+                    'active': context.l10n.filterActive,
+                    'blocked': context.l10n.filterBlocked,
                   },
                   'reports' => {
-                    'pending': 'Новые',
-                    'in_review': 'На рассмотрении',
-                    'resolved': 'Решённые',
-                    'rejected': 'Отклонённые',
+                    'pending': context.l10n.filterNew,
+                    'in_review': context.l10n.statusInReview,
+                    'resolved': context.l10n.filterResolved,
+                    'rejected': context.l10n.filterRejected,
                   },
                   'tasks' => {
-                    'published': 'Открытые',
-                    'assigned': 'В работе',
-                    'completed': 'Завершённые',
-                    'cancelled': 'Отменённые',
+                    'published': context.l10n.filterOpen,
+                    'assigned': context.l10n.statusInProgress,
+                    'completed': context.l10n.filterCompleted,
+                    'cancelled': context.l10n.filterCancelled,
                   },
                   _ => {
-                    'assigned': 'Назначенные',
-                    'in_progress': 'В работе',
-                    'submitted': 'На проверке',
-                    'completed': 'Завершённые',
-                    'disputed': 'Споры',
+                    'assigned': context.l10n.filterAssigned,
+                    'in_progress': context.l10n.statusInProgress,
+                    'submitted': context.l10n.statusSubmitted,
+                    'completed': context.l10n.filterCompleted,
+                    'disputed': context.l10n.filterDisputed,
                   },
                 },
               },
@@ -197,9 +197,9 @@ class _AdminPageState extends ConsumerState<AdminPage> {
               return Column(
                 children: [
                   if (list.isEmpty)
-                    const StateMessage(
-                      'Здесь пока пусто',
-                      subtitle: 'Попробуйте изменить фильтр.',
+                    StateMessage(
+                      context.l10n.emptyTitle,
+                      subtitle: context.l10n.emptyFilterHint,
                     ),
                   for (final row in list)
                     Padding(
@@ -215,7 +215,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
                         onPress: offset == 0
                             ? null
                             : () => setState(() => offset -= 20),
-                        child: const Text('Назад'),
+                        child: Text(context.l10n.back),
                       ),
                       Padding(
                         padding: const EdgeInsets.all(15),
@@ -226,7 +226,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
                         onPress: offset + 20 >= (data['total'] as int)
                             ? null
                             : () => setState(() => offset += 20),
-                        child: const Text('Дальше'),
+                        child: Text(context.l10n.next),
                       ),
                     ],
                   ),
@@ -257,8 +257,10 @@ class _AdminPageState extends ConsumerState<AdminPage> {
                 ),
               ),
               Tag(
-                blocked ? 'Заблокирован' : 'Активен',
-                color: blocked ? const Color(0xFFBE4354) : accent,
+                blocked ? context.l10n.userBlocked : context.l10n.userActive,
+                color: blocked
+                    ? const Color(0xFFBE4354)
+                    : context.theme.colors.primary,
               ),
             ],
           ),
@@ -270,20 +272,22 @@ class _AdminPageState extends ConsumerState<AdminPage> {
               FButton(
                 variant: .outline,
                 onPress: () => context.go('/users/${person.id}'),
-                child: const Text('Профиль'),
+                child: Text(context.l10n.navProfile),
               ),
               FButton(
                 onPress: () => modal(
                   context,
                   AdminActionForm(
                     title: blocked
-                        ? 'Разблокировать пользователя'
-                        : 'Заблокировать пользователя',
+                        ? context.l10n.adminUnblockUser
+                        : context.l10n.adminBlockUser,
                     path: '/admin/users/${person.id}',
                     data: {'status': blocked ? 'active' : 'blocked'},
                   ),
                 ),
-                child: Text(blocked ? 'Разблокировать' : 'Заблокировать'),
+                child: Text(
+                  blocked ? context.l10n.unblock : context.l10n.block,
+                ),
               ),
             ],
           ),
@@ -302,9 +306,9 @@ class _AdminPageState extends ConsumerState<AdminPage> {
           Wrap(
             spacing: 8,
             children: [
-              Tag(statusLabel(row['status'] as String)),
+              Tag(statusLabel(context, row['status'] as String)),
               if (row['is_hidden'] == true)
-                const Tag('Скрыта', color: Color(0xFFBE4354)),
+                Tag(context.l10n.hidden, color: Color(0xFFBE4354)),
             ],
           ),
           const SizedBox(height: 16),
@@ -315,20 +319,24 @@ class _AdminPageState extends ConsumerState<AdminPage> {
               FButton(
                 variant: .outline,
                 onPress: () => context.go('/tasks/${row['id']}'),
-                child: const Text('Открыть задачу'),
+                child: Text(context.l10n.openTask),
               ),
               FButton(
                 onPress: () => modal(
                   context,
                   AdminActionForm(
                     title: row['is_hidden'] == true
-                        ? 'Вернуть публикацию'
-                        : 'Скрыть публикацию',
+                        ? context.l10n.adminRestoreTask
+                        : context.l10n.adminHideTask,
                     path: '/admin/tasks/${row['id']}',
                     data: {'is_hidden': row['is_hidden'] != true},
                   ),
                 ),
-                child: Text(row['is_hidden'] == true ? 'Вернуть' : 'Скрыть'),
+                child: Text(
+                  row['is_hidden'] == true
+                      ? context.l10n.restore
+                      : context.l10n.hide,
+                ),
               ),
             ],
           ),
@@ -344,15 +352,18 @@ class _AdminPageState extends ConsumerState<AdminPage> {
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 14),
-          Tag(statusLabel(row['status'] as String)),
+          Tag(statusLabel(context, row['status'] as String)),
           const SizedBox(height: 12),
           Text(
-            'Заказчик: ${(row['customer'] as Map)['display_name']}\nИсполнитель: ${(row['performer'] as Map)['display_name']}',
+            context.l10n.orderParticipants(
+              (row['customer'] as Map)['display_name'] as String,
+              (row['performer'] as Map)['display_name'] as String,
+            ),
             style: const TextStyle(height: 1.8),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Доступ к переписке открывается только через разбор конкретной жалобы и фиксируется в журнале.',
+          Text(
+            context.l10n.adminChatPrivacy,
             style: TextStyle(color: muted, fontSize: 12, height: 1.6),
           ),
           const SizedBox(height: 16),
@@ -369,45 +380,45 @@ class _AdminPageState extends ConsumerState<AdminPage> {
                     builder: (data) => Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const PageTitle('История заказа'),
+                        PageTitle(context.l10n.orderHistory),
                         for (final event in items(data))
                           Padding(
                             padding: const EdgeInsets.only(bottom: 12),
                             child: Text(
-                              '${statusLabel(event['type'] as String)} · ${dateLabel(event['created_at'])}',
+                              '${statusLabel(context, event['type'] as String)} · ${dateLabel(context, event['created_at'])}',
                             ),
                           ),
                       ],
                     ),
                   ),
                 ),
-                child: const Text('История событий'),
+                child: Text(context.l10n.eventHistory),
               ),
               if (row['status'] == 'disputed') ...[
                 FButton(
                   onPress: () => modal(
                     context,
                     AdminActionForm(
-                      title: 'Возобновить заказ после спора',
+                      title: context.l10n.adminResumeDisputed,
                       path: '/admin/orders/${row['id']}/resolve-dispute',
                       data: const {'action': 'resume'},
                       method: 'POST',
                     ),
                   ),
-                  child: const Text('Возобновить работу'),
+                  child: Text(context.l10n.resumeWork),
                 ),
                 FButton(
                   variant: .outline,
                   onPress: () => modal(
                     context,
                     AdminActionForm(
-                      title: 'Отменить спорный заказ',
+                      title: context.l10n.adminCancelDisputed,
                       path: '/admin/orders/${row['id']}/resolve-dispute',
                       data: const {'action': 'cancel'},
                       method: 'POST',
                     ),
                   ),
-                  child: const Text('Отменить заказ'),
+                  child: Text(context.l10n.cancelOrder),
                 ),
               ],
             ],
@@ -423,11 +434,15 @@ class _AdminPageState extends ConsumerState<AdminPage> {
             children: [
               Expanded(
                 child: Text(
-                  'Жалоба #${row['id']} · ${row['target_type']} #${row['target_id']}',
+                  context.l10n.adminReportLabel(
+                    row['id'] as int,
+                    contentTypeLabel(context, row['target_type'] as String),
+                    row['target_id'] as int,
+                  ),
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
-              Tag(statusLabel(row['status'] as String)),
+              Tag(statusLabel(context, row['status'] as String)),
             ],
           ),
           const SizedBox(height: 14),
@@ -439,8 +454,8 @@ class _AdminPageState extends ConsumerState<AdminPage> {
             Padding(
               padding: const EdgeInsets.only(top: 12),
               child: Text(
-                'Решение: ${row['moderator_comment']}',
-                style: const TextStyle(color: accent),
+                context.l10n.decisionLabel(row['moderator_comment'] as String),
+                style: TextStyle(color: context.theme.colors.primary),
               ),
             ),
           const SizedBox(height: 18),
@@ -451,13 +466,13 @@ class _AdminPageState extends ConsumerState<AdminPage> {
               FButton(
                 onPress: () =>
                     modal(context, ReportDecisionForm(row['id'] as int)),
-                child: const Text('Обработать жалобу'),
+                child: Text(context.l10n.adminProcessReport),
               ),
               if (['pending', 'in_review'].contains(row['status']))
                 FButton(
                   variant: .outline,
                   onPress: () => modal(context, EvidenceForm(row['id'] as int)),
-                  child: const Text('Изучить доказательства'),
+                  child: Text(context.l10n.adminInspectEvidence),
                 ),
             ],
           ),
@@ -468,13 +483,30 @@ class _AdminPageState extends ConsumerState<AdminPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '${row['action'] ?? row['type'] ?? 'Действие'} · #${row['id']}',
+          moderationLabel(context, row['action'] as String? ?? ''),
           style: const TextStyle(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 10),
+        Text(
+          context.l10n.auditTarget(
+            contentTypeLabel(context, row['target_type'] as String),
+            row['target_id'] as int,
+          ),
+        ),
+        const SizedBox(height: 8),
         SelectableText(
-          const JsonEncoder.withIndent('  ').convert(row),
-          style: const TextStyle(fontSize: 11, color: muted, height: 1.5),
+          row['reason'] as String,
+          style: const TextStyle(height: 1.5),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          context.l10n.auditModerator(row['admin_id'] as int),
+          style: const TextStyle(fontSize: 12, color: muted),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          dateLabel(context, row['created_at']),
+          style: const TextStyle(fontSize: 12, color: muted),
         ),
       ],
     );
@@ -512,14 +544,10 @@ class _AdminActionFormState extends ConsumerState<AdminActionForm> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        PageTitle(
-          widget.title,
-          subtitle:
-              'Действие и его основание будут сохранены в журнале модерации.',
-        ),
-        Field('Основание', reason, lines: 3, minLength: 10),
+        PageTitle(widget.title, subtitle: context.l10n.adminActionAuditHint),
+        Field(context.l10n.reasonBasis, reason, lines: 3, minLength: 10),
         ActionButton(
-          'Подтвердить действие',
+          context.l10n.confirmAction,
           action: () async {
             if (!form.currentState!.validate()) return;
             await mutate(
@@ -530,7 +558,7 @@ class _AdminActionFormState extends ConsumerState<AdminActionForm> {
             );
             if (context.mounted) {
               Navigator.pop(context);
-              feedback(context, 'Действие выполнено');
+              feedback(context, context.l10n.actionCompleted);
             }
           },
         ),
@@ -562,20 +590,20 @@ class _ReportDecisionFormState extends ConsumerState<ReportDecisionForm> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        PageTitle('Решение по жалобе #${widget.id}'),
+        PageTitle(context.l10n.adminReportDecisionTitle(widget.id)),
         ChoiceField(
-          'Статус',
+          context.l10n.status,
           value: status,
-          options: const {
-            'in_review': 'На рассмотрении',
-            'resolved': 'Решена',
-            'rejected': 'Отклонена',
+          options: {
+            'in_review': context.l10n.statusInReview,
+            'resolved': context.l10n.statusResolved,
+            'rejected': context.l10n.statusRejectedReport,
           },
           onChange: (v) => setState(() => status = v),
         ),
-        Field('Комментарий модератора', comment, lines: 4, minLength: 5),
+        Field(context.l10n.moderatorComment, comment, lines: 4, minLength: 5),
         ActionButton(
-          'Сохранить решение',
+          context.l10n.saveDecision,
           action: () async {
             if (!form.currentState!.validate()) return;
             await mutate(
@@ -618,13 +646,18 @@ class _EvidenceFormState extends ConsumerState<EvidenceForm> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const PageTitle(
-          'Доступ к доказательствам',
-          subtitle: 'Укажите основание доступа к приватным данным. Просмотр и скачивание файлов попадут в аудит.',
+        PageTitle(
+          context.l10n.evidenceAccess,
+          subtitle: context.l10n.evidenceAccessHint,
         ),
-        Field('Зачем нужен доступ?', reason, lines: 3, minLength: 10),
+        Field(
+          context.l10n.evidenceAccessReason,
+          reason,
+          lines: 3,
+          minLength: 10,
+        ),
         ActionButton(
-          'Открыть материалы',
+          context.l10n.openMaterials,
           action: () async {
             if (!form.currentState!.validate()) return;
             final data = await ref

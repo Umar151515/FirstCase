@@ -12,17 +12,21 @@ class TaskRepository {
       items(await api.request('/categories'));
   Future<dynamic> resource(String path) async {
     final epoch = api.identityEpoch;
+    final language = api.language;
     final uri = Uri.parse(path);
     final cacheable = uri.path == '/tasks' || uri.path.startsWith('/users');
-    final key = 'resource:$epoch:$path';
+    final key = 'resource:$epoch:$language:$path';
     try {
       final data = await api.request(uri.path, query: uri.queryParameters);
-      if (api.identityEpoch == epoch && cacheable) {
+      if (api.identityEpoch == epoch && api.language == language && cacheable) {
         await cache.write(key, data, personal: true);
       }
       return data;
     } on ApiFailure catch (error) {
-      if (cacheable && error.status == null && api.identityEpoch == epoch) {
+      if (cacheable &&
+          error.status == null &&
+          api.identityEpoch == epoch &&
+          api.language == language) {
         final cached = await cache.read(key);
         if (cached is Map) return {...cached, '_offline': true};
       }
@@ -44,11 +48,12 @@ class TaskRepository {
 
   Future<PageData<Task>> tasks(Json query, {bool offline = false}) async {
     final epoch = api.identityEpoch;
-    final key = 'tasks:$epoch:${jsonEncode(query)}';
+    final language = api.language;
+    final key = 'tasks:$epoch:$language:${jsonEncode(query)}';
     dynamic data;
     try {
       data = await api.request('/tasks', query: query);
-      if (api.identityEpoch == epoch) {
+      if (api.identityEpoch == epoch && api.language == language) {
         await cache.write(key, data, personal: true);
       }
     } on ApiFailure {

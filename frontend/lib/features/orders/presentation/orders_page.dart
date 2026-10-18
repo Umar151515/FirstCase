@@ -1,3 +1,5 @@
+import '../../../core/l10n/l10n.dart';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:forui/forui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,40 +27,40 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
     if (user == null) return requireLogin(context);
     return PageBody(
       children: [
-        const PageTitle(
-          'Мои заказы',
-          subtitle: 'Здесь задачи превращаются в опыт.',
+        PageTitle(
+          context.l10n.navOrders,
+          subtitle: context.l10n.ordersSubtitle,
         ),
         ChoiceField(
-          'Раздел',
+          context.l10n.section,
           value: tab,
-          options: const {
-            'orders': 'В работе и завершённые',
-            'tasks': 'Мои публикации',
-            'applications': 'Мои отклики',
+          options: {
+            'orders': context.l10n.ordersActiveAndCompleted,
+            'tasks': context.l10n.myPublications,
+            'applications': context.l10n.myApplications,
           },
           onChange: (v) => setState(() => tab = v),
         ),
         if (tab == 'orders') ...[
           ChoiceField(
-            'Моя роль',
+            context.l10n.myRole,
             value: role,
-            options: const {
-              '': 'Все',
-              'customer': 'Заказчик',
-              'performer': 'Исполнитель',
+            options: {
+              '': context.l10n.all,
+              'customer': context.l10n.roleCustomer,
+              'performer': context.l10n.rolePerformer,
             },
             onChange: (v) => setState(() => role = v),
           ),
           ChoiceField(
-            'Статус',
+            context.l10n.status,
             value: status,
-            options: const {
-              '': 'Все',
-              'in_progress': 'В работе',
-              'submitted': 'На проверке',
-              'accepted_pending_review': 'Ждут отзыв',
-              'completed': 'Завершённые',
+            options: {
+              '': context.l10n.all,
+              'in_progress': context.l10n.statusInProgress,
+              'submitted': context.l10n.statusSubmitted,
+              'accepted_pending_review': context.l10n.filterAwaitingReview,
+              'completed': context.l10n.filterCompleted,
             },
             onChange: (v) => setState(() => status = v),
           ),
@@ -75,11 +77,11 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
               final orders = items(data);
               if (orders.isEmpty) {
                 return StateMessage(
-                  'Совместные проекты ещё впереди',
-                  subtitle: 'Выберите исполнителя или откликнитесь на задачу.',
+                  context.l10n.ordersNoOrders,
+                  subtitle: context.l10n.ordersEmptyHint,
                   action: FButton(
                     onPress: () => context.go('/tasks'),
-                    child: const Text('Найти заказ'),
+                    child: Text(context.l10n.navTasks),
                   ),
                 );
               }
@@ -115,18 +117,26 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
                                 spacing: 12,
                                 runSpacing: 8,
                                 children: [
-                                  Tag(statusLabel(order['status'] as String)),
+                                  Tag(
+                                    statusLabel(
+                                      context,
+                                      order['status'] as String,
+                                    ),
+                                  ),
                                   Tag(
                                     order['customer_id'] == user.id
-                                        ? 'Я заказчик'
-                                        : 'Я исполнитель',
+                                        ? context.l10n.iAmCustomer
+                                        : context.l10n.iAmPerformer,
                                     color: muted,
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'Заказ #${order['id']} · ${dateLabel(order['created_at'])}',
+                                context.l10n.orderDateLabel(
+                                  order['id'] as int,
+                                  dateLabel(context, order['created_at']),
+                                ),
                                 style: const TextStyle(
                                   color: muted,
                                   fontSize: 12,
@@ -149,10 +159,10 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
               final tasks = items(data).map(Task.new).toList();
               return tasks.isEmpty
                   ? StateMessage(
-                      'Пока нет опубликованных задач',
+                      context.l10n.publicationsEmpty,
                       action: FButton(
                         onPress: () => context.go('/tasks/new'),
-                        child: const Text('Создать задачу'),
+                        child: Text(context.l10n.navCreate),
                       ),
                     )
                   : TaskGrid(tasks);
@@ -162,9 +172,9 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
           ResourceView(
             '/applications?mine=true&limit=100',
             builder: (data) => items(data).isEmpty
-                ? const StateMessage(
-                    'Вы ещё не откликались',
-                    subtitle: 'Найдите задачу по душе и расскажите о себе.',
+                ? StateMessage(
+                    context.l10n.applicationsEmpty,
+                    subtitle: context.l10n.applicationsEmptyHint,
                   )
                 : Column(
                     children: items(data)
@@ -182,7 +192,9 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
                                     children: [
                                       Expanded(
                                         child: Text(
-                                          'Отклик на задачу #${application['task_id']}',
+                                          context.l10n.applicationTaskLabel(
+                                            application['task_id'] as int,
+                                          ),
                                           style: const TextStyle(
                                             fontWeight: FontWeight.w700,
                                           ),
@@ -190,6 +202,7 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
                                       ),
                                       Tag(
                                         statusLabel(
+                                          context,
                                           application['status'] as String,
                                         ),
                                       ),

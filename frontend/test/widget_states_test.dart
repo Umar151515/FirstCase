@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:firstcase/app/app.dart';
 import 'package:firstcase/core/database/local_database.dart';
 import 'package:firstcase/core/providers.dart';
+import 'package:firstcase/core/l10n/l10n.dart';
 import 'package:firstcase/shared/widgets/ui.dart';
 
 import 'support.dart';
@@ -18,6 +19,9 @@ Widget harness(Widget child, {List<Override> overrides = const []}) =>
       overrides: overrides,
       retry: (count, error) => null,
       child: MaterialApp(
+        locale: const Locale('ru'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: appLocalizationsDelegates,
         home: FTheme(
           data: FTheme.neutral.light.touch,
           child: Scaffold(body: child),
@@ -128,7 +132,13 @@ void main() {
     );
     container.read(routerProvider).go('/tasks');
     await tester.pumpAndSettle();
-    expect(find.text('Найди свой первый заказ'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(PageTitle),
+        matching: find.text('Задачи'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Пока ничего не нашлось'), findsOneWidget);
     final accessibilityTree = tester
         .binding
@@ -140,7 +150,7 @@ void main() {
         .toStringDeep();
     expect(accessibilityTree, contains('Войти'));
     expect(accessibilityTree, contains('Переключить тему'));
-    expect(accessibilityTree, contains('Найди свой первый заказ'));
+    expect(accessibilityTree, contains('Задачи'));
     expect(tester.takeException(), isNull);
     semantics.dispose();
   });

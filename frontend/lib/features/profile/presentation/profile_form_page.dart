@@ -1,10 +1,11 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:forui/forui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/providers.dart';
+import '../../../core/l10n/l10n.dart';
 import '../../../shared/widgets/ui.dart';
+import '../../../shared/widgets/media.dart';
 import '../../auth/presentation/login_page.dart';
 import '../../orders/presentation/order_forms.dart';
 
@@ -23,6 +24,8 @@ class _ProfileFormPageState extends ConsumerState<ProfileFormPage> {
   final bio = TextEditingController();
   final city = TextEditingController();
   final links = TextEditingController();
+  int? avatarId;
+  bool avatarChanged = false;
   @override
   void initState() {
     super.initState();
@@ -34,6 +37,7 @@ class _ProfileFormPageState extends ConsumerState<ProfileFormPage> {
       bio.text = user.bio;
       city.text = user.city;
       links.text = (user.json['work_links'] as List? ?? []).join('\n');
+      avatarId = user.avatarAttachmentId;
     }
   }
 
@@ -47,13 +51,16 @@ class _ProfileFormPageState extends ConsumerState<ProfileFormPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (ref.watch(sessionProvider).value == null) return requireLogin(context);
+    final user = ref.watch(sessionProvider).value;
+    if (user == null) return requireLogin(context);
     return PageBody(
       width: 760,
       children: [
         PageTitle(
-          widget.onboarding ? 'Расскажем о вас миру?' : 'Ваш профиль',
-          subtitle: 'Хороший профиль помогает найти своих людей. Необязательные поля можно заполнить позже.',
+          widget.onboarding
+              ? context.l10n.profileOnboardingTitle
+              : context.l10n.profileEditTitle,
+          subtitle: context.l10n.profileFormSubtitle,
         ),
         Panel(
           child: Form(
@@ -61,36 +68,45 @@ class _ProfileFormPageState extends ConsumerState<ProfileFormPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Field('Как к вам обращаться?', name, minLength: 2),
+                ImageUploadField(
+                  value: avatarId,
+                  previewUrl: avatarChanged ? null : user.avatar,
+                  label: context.l10n.profilePhotoLabel,
+                  onChange: (value) => setState(() {
+                    avatarChanged = true;
+                    avatarId = value;
+                  }),
+                ),
+                Field(context.l10n.profileName, name, minLength: 2),
                 Field(
-                  'Специализация',
+                  context.l10n.specialization,
                   specialization,
                   required: false,
-                  hint: 'Flutter-разработчик, дизайнер, видеомонтажёр…',
+                  hint: context.l10n.specializationHint,
                 ),
                 Field(
-                  'Навыки · через запятую',
+                  context.l10n.skillsLabel,
                   skills,
                   required: false,
-                  hint: 'Dart, Figma, монтаж, иллюстрация',
+                  hint: context.l10n.skillsHint,
                 ),
                 Field(
-                  'О себе',
+                  context.l10n.bio,
                   bio,
                   lines: 4,
                   required: false,
-                  hint: 'Что любите делать и чему хотите научиться?',
+                  hint: context.l10n.bioHint,
                 ),
-                Field('Город', city, required: false),
+                Field(context.l10n.city, city, required: false),
                 Field(
-                  'Ссылки на работы · по одной на строку',
+                  context.l10n.workLinks,
                   links,
                   lines: 2,
                   required: false,
                   validator: (v) =>
                       parseLinks(v ?? '')
                           .any((link) => Uri.tryParse(link)?.scheme != 'https')
-                      ? 'Используйте HTTPS-ссылки'
+                      ? context.l10n.useHttpsLinks
                       : null,
                 ),
                 Wrap(
@@ -98,7 +114,7 @@ class _ProfileFormPageState extends ConsumerState<ProfileFormPage> {
                   runSpacing: 12,
                   children: [
                     ActionButton(
-                      'Сохранить профиль',
+                      context.l10n.saveProfile,
                       action: () async {
                         if (!form.currentState!.validate()) return;
                         await ref.read(sessionProvider.notifier).updateProfile({
@@ -113,13 +129,14 @@ class _ProfileFormPageState extends ConsumerState<ProfileFormPage> {
                           'city': city.text.trim(),
                           'work_links': parseLinks(links.text),
                           'onboarding_completed': true,
+                          if (avatarChanged) 'avatar_attachment_id': avatarId,
                         });
                         if (context.mounted) context.go('/profile');
                       },
                     ),
                     if (widget.onboarding)
                       ActionButton(
-                        'Заполню позже',
+                        context.l10n.fillLater,
                         secondary: true,
                         action: () async {
                           await ref
@@ -191,10 +208,9 @@ class _TipsPageState extends ConsumerState<TipsPage> {
     return PageBody(
       width: 720,
       children: [
-        const PageTitle(
-          'Маленькое «спасибо»',
-          subtitle:
-              'Добавьте QR, чтобы заказчик мог добровольно поблагодарить вас.',
+        PageTitle(
+          context.l10n.tipsSettingsTitle,
+          subtitle: context.l10n.tipsSettingsIntro,
         ),
         Panel(
           child: Form(
@@ -203,61 +219,57 @@ class _TipsPageState extends ConsumerState<TipsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Field(
-                  'Название платёжного метода',
+                  context.l10n.paymentMethod,
                   method,
-                  hint: 'Например, MBank',
+                  hint: context.l10n.paymentMethodHint,
                   required: enabled,
                 ),
                 Field(
-                  'Безопасная платёжная ссылка · необязательно',
+                  context.l10n.optionalPaymentLink,
                   url,
                   required: false,
                   validator: (v) =>
                       v != null &&
                           v.isNotEmpty &&
                           Uri.tryParse(v)?.scheme != 'https'
-                      ? 'Разрешена только HTTPS-ссылка'
+                      ? context.l10n.httpsLinkOnly
                       : null,
                 ),
-                if (qr != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 18),
-                    child: Tag(
-                      'QR-файл #$qr сохранён',
-                      icon: FLucideIcons.qrCode,
-                    ),
-                  ),
-                UploadField(
-                  imagesOnly: true,
-                  onChange: (v) => setState(() => qr = v.firstOrNull),
+                ImageUploadField(
+                  value: qr,
+                  label: context.l10n.tipsQrImageLabel,
+                  onChange: (value) => setState(() => qr = value),
                 ),
                 ChoiceField(
-                  'Принимать добровольные чаевые',
+                  context.l10n.acceptTips,
                   value: '$enabled',
-                  options: const {'true': 'Включено', 'false': 'Выключено'},
+                  options: {
+                    'true': context.l10n.enabled,
+                    'false': context.l10n.disabled,
+                  },
                   onChange: (v) => setState(() => enabled = v == 'true'),
                 ),
                 ChoiceField(
-                  'Публиковать QR в профиле',
+                  context.l10n.publishQr,
                   value: '$consent',
-                  options: const {
-                    'true': 'Да, разрешаю',
-                    'false': 'Только заказчикам завершённых заказов',
+                  options: {
+                    'true': context.l10n.yesAllow,
+                    'false': context.l10n.completedCustomersOnly,
                   },
                   onChange: (v) => setState(() => consent = v == 'true'),
                 ),
-                const Text(
-                  'QR может раскрывать ваше имя или платёжные данные. Включайте публичный показ осознанно. FirstCase не принимает платежи и не подтверждает переводы.',
+                Text(
+                  context.l10n.qrPrivacyHint,
                   style: TextStyle(color: muted, fontSize: 12, height: 1.7),
                 ),
                 const SizedBox(height: 24),
                 ActionButton(
-                  'Сохранить настройки',
-                  success: 'Настройки чаевых сохранены',
+                  context.l10n.saveSettings,
+                  success: context.l10n.tipsSettingsSaved,
                   action: () async {
                     if (!form.currentState!.validate()) return;
                     if (enabled && qr == null && url.text.isEmpty) {
-                      throw Exception('Добавьте QR или платёжную ссылку');
+                      throw Exception(context.l10n.qrOrLinkRequired);
                     }
                     await mutate(
                       ref,

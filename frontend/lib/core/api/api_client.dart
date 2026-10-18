@@ -1,8 +1,12 @@
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../../shared/models/models.dart';
+import '../l10n/generated/app_localizations.dart';
+import '../l10n/generated/app_localizations_ky.dart';
+import '../l10n/generated/app_localizations_ru.dart';
 
 class ApiFailure implements Exception {
   ApiFailure(this.message, [this.status]);
@@ -20,13 +24,22 @@ class ApiClient {
             BaseOptions(
               baseUrl: const String.fromEnvironment(
                 'API_BASE_URL',
-                defaultValue: '/api/v1',
+                defaultValue: kIsWeb
+                    ? '/api/v1'
+                    : 'http://localhost:8000/api/v1',
               ),
               connectTimeout: const Duration(seconds: 15),
               receiveTimeout: const Duration(seconds: 30),
             ),
           );
   final Dio dio;
+  String language = 'ru';
+  AppLocalizations get messages =>
+      language == 'ky' ? AppLocalizationsKy() : AppLocalizationsRu();
+  Map<String, String> get _headers => {
+    'Accept-Language': language,
+    if (token != null) 'Authorization': 'Bearer $token',
+  };
   String? _token;
   int identityEpoch = 0;
   void Function()? onUnauthorized;
@@ -50,7 +63,7 @@ class ApiClient {
         options: Options(
           method: method,
           extra: {'identity_epoch': identityEpoch},
-          headers: token == null ? {} : {'Authorization': 'Bearer $token'},
+          headers: _headers,
         ),
       )).data;
     } on DioException catch (error) {
@@ -73,14 +86,13 @@ class ApiClient {
       server is String
           ? server
           : switch (status) {
-              401 => 'Сессия завершилась. Войдите заново.',
-              403 => 'У вас нет доступа к этому действию.',
-              404 => 'Объект не найден или недоступен.',
-              409 => 'Состояние изменилось. Обновите страницу.',
-              422 => 'Проверьте введённые данные.',
-              final int code when code >= 500 =>
-                'Сервер временно недоступен. Попробуйте ещё раз.',
-              _ => 'Не удалось подключиться к серверу. Проверьте интернет.',
+              401 => messages.errorSessionExpired,
+              403 => messages.errorForbidden,
+              404 => messages.errorNotFound,
+              409 => messages.errorConflict,
+              422 => messages.errorValidation,
+              final int code when code >= 500 => messages.errorServer,
+              _ => messages.errorNetwork,
             },
       status,
     );
@@ -122,7 +134,7 @@ class ApiClient {
         options: Options(
           extra: {'identity_epoch': identityEpoch},
           responseType: ResponseType.bytes,
-          headers: token == null ? {} : {'Authorization': 'Bearer $token'},
+          headers: _headers,
         ),
       );
       final disposition = response.headers.value('content-disposition') ?? '';

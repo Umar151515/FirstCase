@@ -40,6 +40,7 @@ const testUser = {
   'id': 1,
   'display_name': 'Айбек',
   'role': 'user',
+  'language': 'ru',
   'onboarding_completed': true,
   'skills': <String>[],
 };

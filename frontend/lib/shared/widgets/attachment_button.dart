@@ -1,12 +1,10 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:forui/forui.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:file_picker/file_picker.dart';
 
-import '../../core/providers.dart';
+import '../../core/l10n/l10n.dart';
+import 'media.dart';
 import 'ui.dart';
 
-class AttachmentButton extends ConsumerWidget {
+class AttachmentButton extends StatelessWidget {
   const AttachmentButton(
     this.id, {
     this.filename,
@@ -19,34 +17,11 @@ class AttachmentButton extends ConsumerWidget {
   final bool image;
   final String? path;
   @override
-  Widget build(BuildContext context, WidgetRef ref) => ActionButton(
-    filename ?? 'Файл #$id',
-    secondary: true,
-    icon: FLucideIcons.download,
-    action: () async {
-      final file = await ref.read(apiProvider).download(id, path: path);
-      final bytes = file.bytes;
-      if (image && context.mounted) {
-        await modal(
-          context,
-          Column(
-            children: [
-              Image.memory(bytes),
-              const SizedBox(height: 16),
-              const Text(
-                'Чаевые добровольны. FirstCase не принимает и не подтверждает переводы.',
-                style: TextStyle(color: muted, fontSize: 12, height: 1.6),
-              ),
-            ],
-          ),
-        );
-      } else {
-        await FilePicker.platform.saveFile(
-          fileName: filename ?? file.filename,
-          bytes: bytes,
-          dialogTitle: 'Сохранить вложение',
-        );
-      }
-    },
-  );
+  Widget build(BuildContext context) => image
+      ? ActionButton(
+          filename ?? context.l10n.mediaPreview,
+          secondary: true,
+          action: () => previewImage(context, id, path: path),
+        )
+      : FileDownloadButton(id, filename: filename, path: path);
 }

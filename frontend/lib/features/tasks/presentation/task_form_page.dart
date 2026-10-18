@@ -4,9 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/providers.dart';
+import '../../../core/l10n/l10n.dart';
 import '../../../shared/models/models.dart';
 import '../../../shared/widgets/ui.dart';
+import '../../../shared/widgets/media.dart';
 import '../../auth/presentation/login_page.dart';
+import 'ai_policy.dart';
 
 class TaskFormPage extends ConsumerStatefulWidget {
   const TaskFormPage({this.id, super.key});
@@ -20,11 +23,15 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
   final title = TextEditingController();
   final description = TextEditingController();
   final result = TextEditingController();
-  final city = TextEditingController(text: 'Бишкек');
+  final city = TextEditingController();
   final days = TextEditingController(text: '7');
   String category = '';
   String payment = 'tips';
   String revisions = '2';
+  AiPolicy aiPolicy = AiPolicy.allowed;
+  int? coverId;
+  DateTime? originalDeadline;
+  String? originalDays;
   List<int> attachments = [];
   bool loaded = false;
   Object? loadError;
@@ -50,12 +57,22 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
         title.text = data['title'] as String? ?? '';
         description.text = data['description'] as String? ?? '';
         result.text = data['expected_result'] as String? ?? '';
-        city.text = data['city'] as String? ?? 'Бишкек';
+        city.text = data['city'] as String? ?? '';
         days.text = '${data['days'] ?? 7}';
         category = '${data['category_id'] ?? ''}';
         payment = data['payment_type'] as String? ?? 'tips';
         revisions = '${data['max_revisions'] ?? 2}';
-        attachments = List<int>.from(data['attachment_ids'] as List? ?? []);
+        aiPolicy = AiPolicy.fromCode(data['ai_policy'] as String?);
+        coverId = data['cover_attachment_id'] as int?;
+        attachments = List<int>.from(data['attachment_ids'] as List? ?? [])
+            .where((id) => id != coverId)
+            .toList();
+        if (data['deadline'] is String) {
+          originalDeadline = DateTime.parse(data['deadline'] as String);
+          days.text =
+              '${(originalDeadline!.difference(DateTime.now()).inHours / 24).ceil().clamp(1, 365)}';
+          originalDays = days.text;
+        }
       }
     } catch (error) {
       loadError = error;
@@ -82,7 +99,9 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
     'payment_type': payment,
     'max_revisions': int.parse(revisions),
     'days': int.tryParse(days.text),
-    'attachment_ids': attachments,
+    'ai_policy': aiPolicy.code,
+    'cover_attachment_id': coverId,
+    'attachment_ids': {...attachments, ?coverId}.toList(),
   };
   @override
   Widget build(BuildContext context) {
@@ -92,9 +111,9 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
       return PageBody(
         children: [
           StateMessage(
-            'Не удалось открыть задачу',
+            context.l10n.taskLoadFailed,
             subtitle: '$loadError',
-            action: FButton(onPress: load, child: const Text('Повторить')),
+            action: FButton(onPress: load, child: Text(context.l10n.retry)),
           ),
         ],
       );
@@ -104,9 +123,9 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
       children: [
         PageTitle(
           widget.id == null
-              ? 'Дайте кому-то первый шанс'
-              : 'Редактировать задачу',
-          subtitle: 'Расскажите о задаче. Исполнителю будет проще сделать всё как надо.',
+              ? context.l10n.taskNewTitle
+              : context.l10n.taskEditTitle,
+          subtitle: context.l10n.taskFormSubtitle,
         ),
         Panel(
           child: Form(
@@ -114,19 +133,19 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Tag('01 · О ЗАДАЧЕ'),
+                Tag(context.l10n.taskSectionAbout),
                 const SizedBox(height: 24),
                 Field(
-                  'Название задачи',
+                  context.l10n.taskTitle,
                   title,
                   minLength: 5,
-                  hint: 'Например, сделать Telegram-бота для кофейни',
+                  hint: context.l10n.taskTitleHint,
                 ),
                 ref
                     .watch(categoriesProvider)
                     .when(
                       data: (categories) => ChoiceField(
-                        'Направление',
+                        context.l10n.category,
                         value: category,
                         options: {
                           for (final c in categories)
@@ -138,78 +157,107 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
                       error: (e, _) => Text('$e'),
                     ),
                 Field(
-                  'Подробное описание',
+                  context.l10n.taskDetailedDescription,
                   description,
                   minLength: 20,
                   lines: 5,
-                  hint: 'Что нужно сделать, для кого и что уже есть?',
+                  hint: context.l10n.taskDescriptionHint,
                 ),
                 Field(
-                  'Ожидаемый результат',
+                  context.l10n.expectedResult,
                   result,
                   minLength: 5,
                   lines: 3,
-                  hint: 'Какие файлы, ссылки или материалы вы хотите получить?',
+                  hint: context.l10n.expectedResultHint,
+                ),
+                ImageUploadField(
+                  label: context.l10n.coverPhotoLabel,
+                  value: coverId,
+                  onChange: (value) => setState(() => coverId = value),
                 ),
                 const SizedBox(height: 8),
-                const Tag('02 · УСЛОВИЯ'),
+                Tag(context.l10n.taskSectionTerms),
                 const SizedBox(height: 24),
                 Field(
-                  'Срок выполнения в днях',
+                  context.l10n.deadlineDays,
                   days,
                   validator: (v) {
                     final n = int.tryParse(v ?? '');
                     return n == null || n < 1 || n > 365
-                        ? 'Укажите от 1 до 365 дней'
+                        ? context.l10n.daysValidation
                         : null;
                   },
                 ),
                 ChoiceField(
-                  'Количество согласованных правок',
+                  context.l10n.agreedRevisions,
                   value: revisions,
-                  options: const {
-                    '0': 'Без правок',
-                    '1': '1 правка',
-                    '2': '2 правки',
-                    '3': '3 правки',
+                  options: {
+                    '0': context.l10n.noRevisions,
+                    '1': context.l10n.oneRevision,
+                    '2': context.l10n.twoRevisions,
+                    '3': context.l10n.threeRevisions,
                   },
                   onChange: (v) => setState(() => revisions = v),
                 ),
-                Field('Город', city, required: false),
+                Field(context.l10n.city, city, required: false),
                 ChoiceField(
-                  'Благодарность за работу',
+                  context.l10n.aiPolicyLabel,
+                  value: aiPolicy.code,
+                  options: aiPolicyOptions(context),
+                  onChange: (value) =>
+                      setState(() => aiPolicy = AiPolicy.fromCode(value)),
+                ),
+                Text(
+                  context.l10n.aiPolicyHint,
+                  style: const TextStyle(
+                    color: muted,
+                    height: 1.6,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                ChoiceField(
+                  context.l10n.workGratitude,
                   value: payment,
-                  options: const {
-                    'free': 'Бесплатно · за опыт',
-                    'tips': 'Добровольные чаевые',
+                  options: {
+                    'free': context.l10n.freeForExperience,
+                    'tips': context.l10n.voluntaryTips,
                   },
                   onChange: (v) => setState(() => payment = v),
                 ),
-                const Text(
-                  'Платежей внутри FirstCase нет. Чаевые добровольны и не влияют на завершение заказа или приватность.',
+                Text(
+                  context.l10n.noInAppPayments,
                   style: TextStyle(color: muted, height: 1.6, fontSize: 12),
                 ),
                 const SizedBox(height: 24),
-                UploadField(onChange: (v) => attachments = v),
+                UploadField(
+                  initialIds: attachments,
+                  onChange: (v) => attachments = v,
+                ),
                 Wrap(
                   spacing: 12,
                   runSpacing: 12,
                   children: [
                     ActionButton(
                       widget.id == null
-                          ? 'Опубликовать задачу'
-                          : 'Сохранить изменения',
+                          ? context.l10n.publishTask
+                          : context.l10n.saveChanges,
                       icon: FLucideIcons.arrowUpRight,
                       action: () async {
                         if (!form.currentState!.validate()) return;
                         if (category.isEmpty) {
-                          throw Exception('Выберите направление');
+                          throw Exception(context.l10n.chooseCategory);
                         }
                         final data = values()..remove('days');
-                        data['deadline'] = DateTime.now()
-                            .add(Duration(days: int.parse(days.text)))
-                            .toUtc()
-                            .toIso8601String();
+                        data['deadline'] =
+                            (originalDeadline != null &&
+                                        days.text == originalDays
+                                    ? originalDeadline!
+                                    : DateTime.now().add(
+                                        Duration(days: int.parse(days.text)),
+                                      ))
+                                .toUtc()
+                                .toIso8601String();
                         final saved = await mutate(
                           ref,
                           widget.id == null ? '/tasks' : '/tasks/${widget.id}',
@@ -224,9 +272,9 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
                     ),
                     if (widget.id == null)
                       ActionButton(
-                        'Сохранить черновик',
+                        context.l10n.saveDraft,
                         secondary: true,
-                        success: 'Черновик сохранён на этом устройстве',
+                        success: context.l10n.draftSaved,
                         action: () => ref
                             .read(taskRepositoryProvider)
                             .saveDraft(values()),

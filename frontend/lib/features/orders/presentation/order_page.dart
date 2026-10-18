@@ -1,3 +1,5 @@
+import '../../../core/l10n/l10n.dart';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:forui/forui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,9 +10,11 @@ import '../../../core/providers.dart';
 import '../../../shared/models/models.dart';
 import '../../../shared/widgets/ui.dart';
 import '../../../shared/widgets/attachment_button.dart';
+import '../../../shared/widgets/media.dart';
 import '../../auth/presentation/login_page.dart';
 import '../../chat/presentation/chat_panel.dart';
 import 'order_forms.dart';
+import '../../tasks/presentation/ai_policy.dart';
 
 class OrderPage extends ConsumerWidget {
   const OrderPage(this.id, {super.key});
@@ -30,15 +34,16 @@ class OrderPage extends ConsumerWidget {
             final customer = order['customer_id'] == user.id;
             final performer = order['performer_id'] == user.id;
             final status = order['status'] as String;
+            final aiPolicy = AiPolicy.fromCode(order['ai_policy'] as String?);
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Tag('ЗАКАЗ #$id', icon: FLucideIcons.briefcaseBusiness),
-                const SizedBox(height: 16),
-                PageTitle(
-                  task.title,
-                  subtitle: 'Ваше пространство для хорошей совместной работы',
+                Tag(
+                  context.l10n.orderNumber(id),
+                  icon: FLucideIcons.briefcaseBusiness,
                 ),
+                const SizedBox(height: 16),
+                PageTitle(task.title, subtitle: context.l10n.orderSubtitle),
                 Panel(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,13 +52,19 @@ class OrderPage extends ConsumerWidget {
                         spacing: 10,
                         runSpacing: 10,
                         children: [
-                          Tag(statusLabel(status)),
+                          Tag(statusLabel(context, status)),
+                          Tag(aiPolicyLabel(context, aiPolicy), color: muted),
                           Tag(
-                            'До ${dateLabel(task.deadline)}',
+                            context.l10n.dueBy(
+                              dateLabel(context, task.deadline),
+                            ),
                             icon: FLucideIcons.calendar,
                           ),
                           Tag(
-                            'Правки: ${order['revisions_used']} из ${order['max_revisions']}',
+                            context.l10n.revisionsUsed(
+                              order['revisions_used'] as int,
+                              order['max_revisions'] as int,
+                            ),
                             color: muted,
                           ),
                         ],
@@ -65,25 +76,21 @@ class OrderPage extends ConsumerWidget {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Результат: ${task.result}',
+                        context.l10n.resultLabel(task.result),
                         style: const TextStyle(color: muted, height: 1.7),
                       ),
                       if ((task.json['attachment_ids'] as List? ?? [])
                           .isNotEmpty) ...[
                         const SizedBox(height: 18),
-                        const Text(
-                          'Файлы задания',
+                        Text(
+                          context.l10n.taskFiles,
                           style: TextStyle(fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final id
-                                in task.json['attachment_ids'] as List)
-                              AttachmentButton(id as int),
-                          ],
+                        AttachmentGallery(
+                          attachmentIds: List<int>.from(
+                            task.json['attachment_ids'] as List,
+                          ),
                         ),
                       ],
                       const SizedBox(height: 24),
@@ -93,7 +100,7 @@ class OrderPage extends ConsumerWidget {
                         children: [
                           if (performer && status == 'assigned')
                             ActionButton(
-                              'Начать работу',
+                              context.l10n.startWork,
                               icon: FLucideIcons.play,
                               action: () async {
                                 await mutate(ref, '/orders/$id/start');
@@ -106,18 +113,21 @@ class OrderPage extends ConsumerWidget {
                                 'revision_requested',
                               ].contains(status))
                             FButton(
-                              onPress: () => modal(context, SubmitForm(id)),
-                              child: const Text('Сдать работу'),
+                              onPress: () => modal(
+                                context,
+                                SubmitForm(id, aiPolicy: aiPolicy),
+                              ),
+                              child: Text(context.l10n.submitWork),
                             ),
                           if (customer && status == 'submitted') ...[
                             ActionButton(
-                              'Принять работу',
+                              context.l10n.acceptWork,
                               icon: FLucideIcons.check,
                               action: () async {
                                 if (!await confirm(
                                   context,
-                                  'Принять результат?',
-                                  'После принятия нужно оставить отзыв. Именно он успешно завершит заказ.',
+                                  context.l10n.acceptWorkTitle,
+                                  context.l10n.acceptWorkHint,
                                 )) {
                                   return;
                                 }
@@ -132,13 +142,13 @@ class OrderPage extends ConsumerWidget {
                               FButton(
                                 variant: .outline,
                                 onPress: () => modal(context, RevisionForm(id)),
-                                child: const Text('Запросить правки'),
+                                child: Text(context.l10n.requestRevision),
                               ),
                           ],
                           if (customer && status == 'accepted_pending_review')
                             FButton(
                               onPress: () => modal(context, ReviewForm(id)),
-                              child: const Text('Оставить обязательный отзыв'),
+                              child: Text(context.l10n.mandatoryReview),
                             ),
                           if (performer && status == 'completed')
                             FButton(
@@ -148,7 +158,7 @@ class OrderPage extends ConsumerWidget {
                                 FLucideIcons.badgeCheck,
                                 size: 16,
                               ),
-                              child: const Text('Добавить в портфолио'),
+                              child: Text(context.l10n.addToPortfolio),
                             ),
                           if (performer && status == 'completed')
                             FButton(
@@ -157,7 +167,7 @@ class OrderPage extends ConsumerWidget {
                                 context,
                                 ReviewForm(id, requiredComment: false),
                               ),
-                              child: const Text('Оценить заказчика'),
+                              child: Text(context.l10n.reviewCustomer),
                             ),
                           if (customer && status == 'completed')
                             FButton(
@@ -166,7 +176,7 @@ class OrderPage extends ConsumerWidget {
                                 context,
                                 TipsViewer(order['performer_id'] as int),
                               ),
-                              child: const Text('Поблагодарить исполнителя ♡'),
+                              child: Text(context.l10n.thankPerformerShort),
                             ),
                           if ([
                             'assigned',
@@ -174,13 +184,13 @@ class OrderPage extends ConsumerWidget {
                             'revision_requested',
                           ].contains(status))
                             ActionButton(
-                              'Отменить заказ',
+                              context.l10n.cancelOrder,
                               secondary: true,
                               action: () async {
                                 if (await confirm(
                                   context,
-                                  'Отменить заказ?',
-                                  'Обсудите это решение со вторым участником. Отмена сохранится в истории.',
+                                  context.l10n.cancelOrderTitle,
+                                  context.l10n.cancelOrderHint,
                                 )) {
                                   await mutate(ref, '/orders/$id/cancel');
                                 }
@@ -192,13 +202,13 @@ class OrderPage extends ConsumerWidget {
                             'disputed',
                           ].contains(status))
                             ActionButton(
-                              'Открыть спор',
+                              context.l10n.openDispute,
                               secondary: true,
                               action: () async {
                                 if (!await confirm(
                                   context,
-                                  'Открыть спор?',
-                                  'Исполнение приостановится. Опишите ситуацию команде модерации в жалобе.',
+                                  context.l10n.openDisputeTitle,
+                                  context.l10n.openDisputeHint,
                                 )) {
                                   return;
                                 }
@@ -212,7 +222,7 @@ class OrderPage extends ConsumerWidget {
                             variant: .ghost,
                             onPress: () =>
                                 modal(context, ReportForm('order', id)),
-                            child: const Text('Пожаловаться'),
+                            child: Text(context.l10n.report),
                           ),
                         ],
                       ),
@@ -226,9 +236,12 @@ class OrderPage extends ConsumerWidget {
                       color: accent.withValues(alpha: .06),
                       child: Text(
                         customer
-                            ? 'Остался один важный шаг: оставьте отзыв. Он завершит заказ и подтвердит опыт исполнителя.'
-                            : 'Работа принята! Ждём отзыв заказчика, после чего вы сможете создать подтверждённый кейс.',
-                        style: const TextStyle(color: accent, height: 1.6),
+                            ? context.l10n.orderNeedsCustomerReview
+                            : context.l10n.orderWaitingCustomerReview,
+                        style: TextStyle(
+                          color: context.theme.colors.primary,
+                          height: 1.6,
+                        ),
                       ),
                     ),
                   ),
@@ -239,8 +252,8 @@ class OrderPage extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (items(data).isNotEmpty) ...[
-                        const Text(
-                          'Результаты работы',
+                        Text(
+                          context.l10n.workResults,
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w700,
@@ -256,7 +269,13 @@ class OrderPage extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Tag(
-                                  'ВЕРСИЯ ${deliverable['version']} · ${dateLabel(deliverable['created_at'])}',
+                                  context.l10n.resultVersion(
+                                    deliverable['version'] as int,
+                                    dateLabel(
+                                      context,
+                                      deliverable['created_at'],
+                                    ),
+                                  ),
                                   icon: FLucideIcons.packageCheck,
                                 ),
                                 const SizedBox(height: 14),
@@ -265,6 +284,35 @@ class OrderPage extends ConsumerWidget {
                                   style: const TextStyle(height: 1.7),
                                 ),
                                 const SizedBox(height: 14),
+                                Tag(
+                                  aiUsageLabel(
+                                    context,
+                                    AiUsage.fromCode(
+                                      deliverable['ai_usage'] as String?,
+                                    ),
+                                  ),
+                                  color: muted,
+                                ),
+                                if ('${deliverable['ai_disclosure'] ?? ''}'
+                                    .isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 10),
+                                    child: Text(
+                                      deliverable['ai_disclosure'] as String,
+                                      style: const TextStyle(
+                                        color: muted,
+                                        height: 1.6,
+                                      ),
+                                    ),
+                                  ),
+                                const SizedBox(height: 14),
+                                AttachmentGallery(
+                                  attachmentIds: List<int>.from(
+                                    deliverable['attachment_ids'] as List? ??
+                                        [],
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
                                 Wrap(
                                   spacing: 8,
                                   runSpacing: 8,
@@ -279,15 +327,8 @@ class OrderPage extends ConsumerWidget {
                                           Uri.parse(link as String),
                                           mode: LaunchMode.externalApplication,
                                         ),
-                                        child: const Text(
-                                          'Открыть результат ↗',
-                                        ),
+                                        child: Text(context.l10n.openResult),
                                       ),
-                                    for (final attachment
-                                        in (deliverable['attachment_ids']
-                                                as List? ??
-                                            []))
-                                      AttachmentButton(attachment as int),
                                   ],
                                 ),
                               ],
@@ -306,8 +347,8 @@ class OrderPage extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (items(data).isNotEmpty) ...[
-                        const Text(
-                          'Отзывы о сотрудничестве',
+                        Text(
+                          context.l10n.collaborationReviews,
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w700,
@@ -336,7 +377,20 @@ class OrderPage extends ConsumerWidget {
                                   children: [
                                     Expanded(
                                       child: Text(
-                                        'Отзыв от ${review['author_id'] == order['customer_id'] ? 'заказчика' : 'исполнителя'} · ${dateLabel(review['created_at'])}',
+                                        review['author_id'] ==
+                                                order['customer_id']
+                                            ? context.l10n.reviewByCustomer(
+                                                dateLabel(
+                                                  context,
+                                                  review['created_at'],
+                                                ),
+                                              )
+                                            : context.l10n.reviewByPerformer(
+                                                dateLabel(
+                                                  context,
+                                                  review['created_at'],
+                                                ),
+                                              ),
                                         style: const TextStyle(
                                           color: muted,
                                           fontSize: 11,
@@ -369,7 +423,7 @@ class OrderPage extends ConsumerWidget {
                 if (customer) ...[
                   const SizedBox(height: 12),
                   ActionButton(
-                    'Настроить разрешения на публикацию',
+                    context.l10n.configurePermissions,
                     secondary: true,
                     icon: FLucideIcons.shieldCheck,
                     action: () async {
@@ -409,8 +463,8 @@ class OrderPage extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'История заказа',
+                        Text(
+                          context.l10n.orderHistory,
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -422,20 +476,23 @@ class OrderPage extends ConsumerWidget {
                             padding: const EdgeInsets.only(bottom: 12),
                             child: Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   FLucideIcons.circleCheck,
                                   size: 14,
-                                  color: accent,
+                                  color: context.theme.colors.primary,
                                 ),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    statusLabel(event['type'] as String),
+                                    statusLabel(
+                                      context,
+                                      event['type'] as String,
+                                    ),
                                     style: const TextStyle(fontSize: 12),
                                   ),
                                 ),
                                 Text(
-                                  dateLabel(event['created_at']),
+                                  dateLabel(context, event['created_at']),
                                   style: const TextStyle(
                                     color: muted,
                                     fontSize: 11,
@@ -464,17 +521,17 @@ class TipsViewer extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      const PageTitle(
-        'Спасибо за хорошую работу ♡',
-        subtitle: 'Чаевые — только по вашему желанию. Заказ и приватность не зависят от перевода.',
+      PageTitle(
+        context.l10n.performerGratitude,
+        subtitle: context.l10n.tipsIntro,
       ),
       ResourceView(
         '/users/$userId/tips',
         builder: (data) {
           if (data == null || data['enabled'] != true) {
-            return const StateMessage(
-              'Исполнитель ещё не добавил QR',
-              subtitle: 'Тёплый отзыв тоже очень ценен.',
+            return StateMessage(
+              context.l10n.tipsNoQr,
+              subtitle: context.l10n.tipsReviewAlternative,
             );
           }
           return Column(
@@ -489,7 +546,7 @@ class TipsViewer extends StatelessWidget {
                 AttachmentButton(
                   data['qr_attachment_id'] as int,
                   image: true,
-                  filename: 'Посмотреть QR-код',
+                  filename: context.l10n.viewQr,
                 ),
               if (data['payment_url'] != null) ...[
                 const SizedBox(height: 12),
@@ -499,12 +556,12 @@ class TipsViewer extends StatelessWidget {
                     Uri.parse(data['payment_url'] as String),
                     mode: LaunchMode.externalApplication,
                   ),
-                  child: const Text('Открыть платёжную ссылку ↗'),
+                  child: Text(context.l10n.openPaymentLink),
                 ),
               ],
               const SizedBox(height: 18),
-              const Text(
-                'Перевод выполняется во внешнем приложении. FirstCase не принимает деньги, не берёт комиссию и не подтверждает получение перевода.',
+              Text(
+                context.l10n.externalPaymentHint,
                 style: TextStyle(color: muted, height: 1.6, fontSize: 12),
               ),
             ],

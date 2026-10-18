@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/providers.dart';
+import '../core/l10n/l10n.dart';
 import '../features/auth/presentation/login_page.dart';
 import '../shared/widgets/ui.dart';
 
@@ -13,17 +14,19 @@ class AppShell extends ConsumerWidget {
   final String location;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final mobile = MediaQuery.sizeOf(context).width < 1100;
+    final viewport = MediaQuery.sizeOf(context).width;
+    final mobile = viewport < 1280;
     final session = ref.watch(sessionProvider);
     final user = session.value;
     final demo = ref.watch(modeProvider).value == 'demo';
+    final l = context.l10n;
     final paths = ['/', '/tasks', '/tasks/new', '/orders', '/profile'];
     final labels = [
-      'Главная',
-      'Найти заказ',
-      'Создать',
-      'Мои заказы',
-      'Профиль',
+      l.navHome,
+      mobile ? l.navTasksShort : l.navTasks,
+      mobile ? l.navCreateShort : l.navCreate,
+      mobile ? l.navOrdersShort : l.navOrders,
+      l.navProfile,
     ];
     final icons = [
       FLucideIcons.house,
@@ -50,7 +53,7 @@ class AppShell extends ConsumerWidget {
               container: true,
               explicitChildNodes: true,
               child: Container(
-                height: mobile ? 68 : 86,
+                height: mobile ? 64 : 80,
                 decoration: BoxDecoration(
                   border: Border(bottom: BorderSide(color: edge(context))),
                 ),
@@ -62,33 +65,55 @@ class AppShell extends ConsumerWidget {
                       children: [
                         GestureDetector(
                           onTap: () => context.go('/'),
-                          child: const Brand(),
+                          child: Brand(width: viewport < 380 ? 96 : 142),
                         ),
                         if (!mobile) ...[
-                          const SizedBox(width: 48),
-                          for (final i in [0, 1, 3])
-                            Padding(
-                              padding: const EdgeInsets.only(right: 10),
-                              child: FButton(
-                                variant: .ghost,
+                          const SizedBox(width: 28),
+                          Expanded(
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
-                                onPress: () => context.go(paths[i]),
-                                child: Text(
-                                  labels[i],
-                                  style: TextStyle(
-                                    color: index == i ? accent : ink(context),
-                                    fontWeight: index == i
-                                        ? FontWeight.w700
-                                        : FontWeight.w500,
-                                  ),
-                                ),
+                                children: [
+                                  for (final i in [0, 1, 3])
+                                    Flexible(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          right: 6,
+                                        ),
+                                        child: FButton(
+                                          variant: .ghost,
+                                          mainAxisSize: MainAxisSize.min,
+                                          onPress: () => context.go(paths[i]),
+                                          child: Flexible(
+                                            child: Text(
+                                              labels[i],
+                                              style: TextStyle(
+                                                color: index == i
+                                                    ? context
+                                                          .theme
+                                                          .colors
+                                                          .primary
+                                                    : ink(context),
+                                                fontWeight: index == i
+                                                    ? FontWeight.w700
+                                                    : FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
+                          ),
                         ],
-                        const Spacer(),
+                        if (mobile) const Spacer(),
+                        const LanguagePicker(compact: true),
                         FButton.icon(
                           variant: .ghost,
-                          semanticsLabel: 'Переключить тему',
+                          semanticsLabel: l.navTheme,
                           onPress: () =>
                               ref.read(themeProvider.notifier).toggle(),
                           child: Icon(
@@ -101,18 +126,18 @@ class AppShell extends ConsumerWidget {
                         if (user != null) ...[
                           FButton.icon(
                             variant: .ghost,
-                            semanticsLabel: 'Уведомления',
+                            semanticsLabel: l.navNotifications,
                             onPress: () => context.go('/notifications'),
                             child: const Icon(FLucideIcons.bell, size: 19),
                           ),
                           if (!mobile) ...[
-                            const SizedBox(width: 18),
+                            const SizedBox(width: 10),
                             FButton(
                               onPress: () => context.go('/tasks/new'),
                               prefix: const Icon(FLucideIcons.plus, size: 16),
-                              child: const Text('Создать заказ'),
+                              child: Text(l.navCreate),
                             ),
-                            const SizedBox(width: 20),
+                            const SizedBox(width: 14),
                           ],
                           GestureDetector(
                             onTap: () => context.go('/profile'),
@@ -122,7 +147,7 @@ class AppShell extends ConsumerWidget {
                           FButton(
                             size: .sm,
                             onPress: () => context.go('/login'),
-                            child: const Text('Войти'),
+                            child: Text(l.signIn),
                           ),
                       ],
                     ),
@@ -145,16 +170,24 @@ class AppShell extends ConsumerWidget {
                       constraints: const BoxConstraints(maxWidth: 1220),
                       child: Row(
                         children: [
-                          const Tag('DEMO', color: accent),
+                          Text(
+                            l.demoLabel,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
                               user == null
-                                  ? 'Попробуйте FirstCase в любой роли'
-                                  : 'Вы вошли как ${user.name}${user.admin ? ' · администратор' : ''}',
-                              style: const TextStyle(
+                                  ? l.demoTryRoles
+                                  : user.admin
+                                  ? l.signedInAsAdmin(user.name)
+                                  : l.signedInAs(user.name),
+                              style: TextStyle(
                                 fontSize: 12,
-                                color: accent,
+                                color: context.theme.colors.mutedForeground,
                               ),
                             ),
                           ),
@@ -164,7 +197,9 @@ class AppShell extends ConsumerWidget {
                             mainAxisSize: MainAxisSize.min,
                             onPress: () =>
                                 modal(context, const IdentityPicker()),
-                            child: const Text('Войти как…'),
+                            child: Text(
+                              mobile ? l.demoSwitchRole : l.demoSignInAs,
+                            ),
                           ),
                         ],
                       ),
@@ -177,7 +212,7 @@ class AppShell extends ConsumerWidget {
                 container: true,
                 explicitChildNodes: true,
                 child: session.isLoading
-                    ? const Center(child: FCircularProgress())
+                    ? const Center(child: BrandLoading())
                     : child,
               ),
             ),
@@ -198,36 +233,4 @@ class AppShell extends ConsumerWidget {
       ),
     );
   }
-}
-
-class Brand extends StatelessWidget {
-  const Brand({super.key});
-  @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Container(
-        width: 35,
-        height: 35,
-        decoration: BoxDecoration(
-          color: accent,
-          borderRadius: BorderRadius.circular(11),
-        ),
-        child: const Icon(FLucideIcons.layers, color: Colors.white, size: 21),
-      ),
-      const SizedBox(width: 9),
-      const Text(
-        'firstcase',
-        style: TextStyle(
-          fontWeight: FontWeight.w800,
-          fontSize: 25,
-          letterSpacing: -1.3,
-        ),
-      ),
-      const Padding(
-        padding: EdgeInsets.only(left: 3),
-        child: Text('●', style: TextStyle(color: accent, fontSize: 12)),
-      ),
-    ],
-  );
 }

@@ -1,19 +1,22 @@
+import '../../../core/l10n/l10n.dart';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:forui/forui.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/models/models.dart';
 import '../../../shared/widgets/ui.dart';
+import '../../../shared/widgets/media.dart';
+import 'ai_policy.dart';
 
-IconData categoryIcon(String name) {
-  final s = name.toLowerCase();
-  if (s.contains('дизайн')) return FLucideIcons.penTool;
-  if (s.contains('видео')) return FLucideIcons.clapperboard;
-  if (s.contains('текст')) return FLucideIcons.notebookPen;
-  if (s.contains('маркет')) return FLucideIcons.megaphone;
-  if (s.contains('иллюстр')) return FLucideIcons.palette;
-  return FLucideIcons.codeXml;
-}
+IconData categoryIcon(String slug) => switch (slug) {
+  'design' => FLucideIcons.penTool,
+  'video' => FLucideIcons.clapperboard,
+  'text' => FLucideIcons.notebookPen,
+  'illustration' => FLucideIcons.palette,
+  'data' => FLucideIcons.chartNoAxesCombined,
+  _ => FLucideIcons.codeXml,
+};
 
 class TaskCard extends StatelessWidget {
   const TaskCard(this.task, {super.key});
@@ -25,10 +28,30 @@ class TaskCard extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (task.coverId != null) ...[
+          ProtectedImage(
+            attachmentId: task.coverId!,
+            width: double.infinity,
+            height: 160,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          const SizedBox(height: 18),
+        ],
         Row(
           children: [
-            Tag(task.category, icon: categoryIcon(task.category)),
-            const Spacer(),
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Tag(
+                  categoryLabel(
+                    context,
+                    task.categorySlug,
+                    fallback: task.category,
+                  ),
+                  icon: categoryIcon(task.categorySlug),
+                ),
+              ),
+            ),
             if (task.status == 'published')
               const Icon(FLucideIcons.arrowUpRight, size: 17, color: muted),
           ],
@@ -46,6 +69,8 @@ class TaskCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
+        Tag(aiPolicyLabel(context, task.aiPolicy), color: muted),
+        const SizedBox(height: 12),
         Text(
           task.description,
           maxLines: 2,
@@ -53,20 +78,41 @@ class TaskCard extends StatelessWidget {
           style: const TextStyle(color: muted, fontSize: 13, height: 1.6),
         ),
         const SizedBox(height: 20),
-        Row(
+        Wrap(
+          spacing: 16,
+          runSpacing: 8,
           children: [
-            const Icon(FLucideIcons.calendarDays, size: 13, color: muted),
-            const SizedBox(width: 5),
-            Text(
-              'до ${dateLabel(task.deadline)}',
-              style: const TextStyle(fontSize: 11, color: muted),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(FLucideIcons.calendarDays, size: 13, color: muted),
+                const SizedBox(width: 5),
+                Text(
+                  context.l10n.dueBy(dateLabel(context, task.deadline)),
+                  style: const TextStyle(fontSize: 11, color: muted),
+                ),
+              ],
             ),
-            const SizedBox(width: 16),
-            const Icon(FLucideIcons.messagesSquare, size: 13, color: muted),
-            const SizedBox(width: 5),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(FLucideIcons.messagesSquare, size: 13, color: muted),
+                const SizedBox(width: 5),
+                Text(
+                  context.l10n.applicationCount(task.responses),
+                  style: const TextStyle(fontSize: 11, color: muted),
+                ),
+              ],
+            ),
             Text(
-              '${task.responses} откликов',
-              style: const TextStyle(fontSize: 11, color: muted),
+              task.tips
+                  ? context.l10n.paymentTips
+                  : context.l10n.paymentExperience,
+              style: TextStyle(
+                fontSize: 11,
+                color: context.theme.colors.primary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -85,15 +131,6 @@ class TaskCard extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              task.tips ? 'За чаевые ♡' : 'За опыт ✦',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: accent,
               ),
             ),
           ],

@@ -3,6 +3,7 @@ import 'package:forui/forui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n/l10n.dart';
 import '../../../core/providers.dart';
 import '../../../shared/models/models.dart';
 import '../../../shared/widgets/ui.dart';
@@ -22,184 +23,161 @@ class _HomePageState extends ConsumerState<HomePage> {
     super.dispose();
   }
 
+  void findTasks() =>
+      context.go('/tasks?q=${Uri.encodeQueryComponent(search.text)}');
+
   @override
   Widget build(BuildContext context) {
-    final mobile = MediaQuery.sizeOf(context).width < 760;
+    final l = context.l10n;
+    final mobile = MediaQuery.sizeOf(context).width < 700;
+    final dark = ref.watch(themeProvider);
     return PageBody(
       children: [
-        Container(
-          padding: EdgeInsets.all(mobile ? 26 : 44),
-          decoration: BoxDecoration(
-            color: ref.watch(themeProvider)
-                ? const Color(0xFF242136)
-                : const Color(0xFFF0EDFC),
-            borderRadius: BorderRadius.circular(28),
-          ),
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: mobile ? 16 : 32),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                flex: 6,
+                flex: 7,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Tag(
-                      'МАЛЕНЬКИЕ ЗАДАЧИ. БОЛЬШОЕ НАЧАЛО.',
-                      icon: FLucideIcons.sparkles,
-                    ),
-                    const SizedBox(height: 25),
                     Text(
-                      'Твой первый кейс\nначинается здесь',
+                      l.homeKicker,
                       style: TextStyle(
-                        fontSize: mobile ? 35 : 49,
-                        height: 1.1,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -2.1,
+                        fontSize: 12,
+                        color: context.theme.colors.mutedForeground,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Text(
+                      l.homeTitle,
+                      style: TextStyle(
+                        fontSize: mobile ? 34 : 48,
+                        height: 1.12,
+                        letterSpacing: -1.4,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 20),
-                    const Text(
-                      'Помоги с реальной задачей. Получи опыт,\nчестный отзыв и портфолио, которому доверяют.',
-                      style: TextStyle(color: muted, fontSize: 15, height: 1.7),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 560),
+                      child: Text(
+                        l.homeIntro,
+                        style: TextStyle(
+                          fontSize: 16,
+                          height: 1.65,
+                          color: context.theme.colors.mutedForeground,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 28),
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: surface(context),
-                        borderRadius: BorderRadius.circular(13),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: FTextField(
-                              control: .managed(controller: search),
-                              hint: 'Что тебе интересно?',
-                              prefixBuilder: (context, style, variants) =>
-                                  const Padding(
-                                    padding: EdgeInsets.only(
-                                      left: 14,
-                                      right: 8,
-                                    ),
-                                    child: Icon(
-                                      FLucideIcons.search,
-                                      color: muted,
-                                      size: 18,
-                                    ),
-                                  ),
-                              onSubmit: (value) => context.go(
-                                '/tasks?q=${Uri.encodeQueryComponent(value)}',
-                              ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FTextField(
+                            control: .managed(controller: search),
+                            hint: l.homeSearchHint,
+                            onSubmit: (_) => findTasks(),
+                            prefixBuilder: (_, _, _) => const Padding(
+                              padding: EdgeInsets.only(left: 12, right: 8),
+                              child: Icon(FLucideIcons.search, size: 18),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          FButton(
-                            onPress: () => context.go(
-                              '/tasks?q=${Uri.encodeQueryComponent(search.text)}',
-                            ),
-                            child: const Text('Найти'),
-                          ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 10),
+                        FButton(
+                      mainAxisSize: MainAxisSize.min,
+                          onPress: findTasks,
+                          child: mobile
+                              ? const Icon(FLucideIcons.arrowRight, size: 18)
+                              : Flexible(child: Text(l.homeSearch)),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 15),
-                    const Text(
-                      'Без опыта — можно. Без первого шага — никак.',
-                      style: TextStyle(color: muted, fontSize: 11),
+                    const SizedBox(height: 16),
+                    FButton(
+                      variant: .ghost,
+                      mainAxisSize: MainAxisSize.min,
+                      onPress: () => context.go('/tasks/new'),
+                      prefix: const Icon(FLucideIcons.plus, size: 16),
+                      child: Flexible(child: Text(l.homeCreate)),
                     ),
                   ],
                 ),
               ),
-              if (MediaQuery.sizeOf(context).width >= 1100)
-                const Expanded(flex: 5, child: _HeroArt()),
+              if (!mobile) ...[
+                const SizedBox(width: 64),
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: Brand(mark: true, width: 210),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        l.brandDescription,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 12, color: muted),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
         const SizedBox(height: 24),
-        LayoutBuilder(
-          builder: (context, constraints) => Wrap(
-            spacing: 18,
-            runSpacing: 12,
-            children: [
-              _Benefit(
-                FLucideIcons.badgeCheck,
-                'Реальные задачи',
-                'Опыт, который имеет значение',
-                constraints.maxWidth,
-              ),
-              _Benefit(
-                FLucideIcons.heartHandshake,
-                'Безопасное начало',
-                'Без комиссий и обязательных платежей',
-                constraints.maxWidth,
-              ),
-              _Benefit(
-                FLucideIcons.folderHeart,
-                'Подтверждённые кейсы',
-                'Репутация строится на деле',
-                constraints.maxWidth,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 38),
-        const _Section(
-          'Найди своё направление',
-          'Выбери то, в чём хочется расти',
-        ),
+        Divider(color: edge(context)),
+        const SizedBox(height: 24),
+        _Section(l.homeCategories),
         ref
             .watch(categoriesProvider)
             .when(
               data: (categories) => LayoutBuilder(
                 builder: (context, constraints) {
-                  final columns = constraints.maxWidth > 900
+                  final cols = constraints.maxWidth > 950
                       ? 6
                       : constraints.maxWidth > 550
                       ? 3
                       : 2;
-                  final width =
-                      (constraints.maxWidth - (columns - 1) * 12) / columns;
+                  final width = (constraints.maxWidth - (cols - 1) * 10) / cols;
                   return Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
+                    spacing: 10,
+                    runSpacing: 10,
                     children: categories
-                        .take(6)
                         .map(
                           (category) => SizedBox(
                             width: width,
                             child: Panel(
-                              padding: 18,
+                              padding: 16,
                               onTap: () => context.go(
                                 '/tasks?category_id=${category['id']}',
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              child: Row(
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(11),
-                                    decoration: BoxDecoration(
-                                      color: accent.withValues(alpha: .08),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Icon(
-                                      categoryIcon(category['name'] as String),
-                                      size: 22,
-                                      color: accent,
-                                    ),
+                                  Icon(
+                                    categoryIcon(category['slug'] as String),
+                                    size: 18,
+                                    color: dark
+                                        ? const Color(0xFF9ABDEB)
+                                        : accent,
                                   ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    category['name'] as String,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  const Text(
-                                    'Смотреть задачи ↗',
-                                    style: TextStyle(
-                                      color: muted,
-                                      fontSize: 10,
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      categoryLabel(
+                                        context,
+                                        category['slug'] as String,
+                                        fallback: category['name'] as String,
+                                      ),
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -212,62 +190,120 @@ class _HomePageState extends ConsumerState<HomePage> {
                 },
               ),
               loading: () => const LoadingView(),
-              error: (e, _) =>
-                  StateMessage('Категории пока недоступны', subtitle: '$e'),
+              error: (error, _) =>
+                  StateMessage(l.homeCategoriesUnavailable, subtitle: '$error'),
             ),
         const SizedBox(height: 42),
         _Section(
-          'Свежие задачи для твоего старта',
-          'Здесь важны желание и интерес, а не годы опыта',
+          l.homeRecent,
           action: FButton(
             variant: .ghost,
             mainAxisSize: MainAxisSize.min,
             onPress: () => context.go('/tasks'),
             suffix: const Icon(FLucideIcons.arrowRight, size: 16),
-            child: const Text('Все задачи'),
+            child: Flexible(child: Text(l.homeSeeAll)),
           ),
         ),
         ResourceView(
           '/tasks?status=published&limit=6&sort=newest',
           builder: (data) {
             final tasks = items(data).map(Task.new).toList();
-            return tasks.isEmpty
-                ? const StateMessage(
-                    'Здесь появится ваша первая задача',
-                    subtitle: 'Создайте заказ и найдите человека, которому нужен первый шанс.',
-                  )
-                : TaskGrid(tasks);
+            return tasks.isEmpty ? StateMessage(l.homeEmpty) : TaskGrid(tasks);
           },
         ),
-        const SizedBox(height: 40),
-        _Section(
-          'Люди, с которыми всё получится',
-          'Открыты к первым проектам и новым знакомствам',
-          action: FButton(
-            variant: .ghost,
-            mainAxisSize: MainAxisSize.min,
-            onPress: () => context.go('/tasks'),
-            child: const Text('Найти задачу →'),
+        const SizedBox(height: 42),
+        _Section(l.homeApproach),
+        LayoutBuilder(
+          builder: (context, constraints) => Wrap(
+            spacing: 24,
+            runSpacing: 20,
+            children: [l.homeStepFind, l.homeStepWork, l.homeStepKeep].indexed
+                .map(
+                  (entry) => SizedBox(
+                    width: constraints.maxWidth > 700
+                        ? (constraints.maxWidth - 48) / 3
+                        : constraints.maxWidth,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '0${entry.$1 + 1}',
+                          style: TextStyle(
+                            fontSize: 22,
+                            color: context.theme.colors.mutedForeground,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              entry.$2,
+                              style: const TextStyle(fontSize: 14, height: 1.5),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+                .toList(),
           ),
         ),
+        const SizedBox(height: 32),
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: dark ? const Color(0xFF14243B) : const Color(0xFFF0F4FA),
+            border: Border(
+              left: BorderSide(
+                color: dark ? const Color(0xFF9ABDEB) : accent,
+                width: 3,
+              ),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l.homeAiTitle,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                l.homeAiBody,
+                style: TextStyle(
+                  height: 1.65,
+                  color: context.theme.colors.mutedForeground,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 42),
+        _Section(l.homePeople),
         ResourceView(
           '/users?limit=4',
           builder: (data) => LayoutBuilder(
             builder: (context, constraints) {
-              final columns = constraints.maxWidth > 900
+              final people = items(data);
+              if (people.isEmpty) return StateMessage(l.homePeopleEmpty);
+              final cols = constraints.maxWidth > 950
                   ? 4
                   : constraints.maxWidth > 550
                   ? 2
                   : 1;
-              final width =
-                  (constraints.maxWidth - 16 * (columns - 1)) / columns;
               return Wrap(
                 spacing: 16,
                 runSpacing: 16,
-                children: items(data).map((json) {
+                children: people.map((json) {
                   final person = Person(json);
                   return SizedBox(
-                    width: width,
+                    width: (constraints.maxWidth - (cols - 1) * 16) / cols,
                     child: Panel(
                       padding: 20,
                       onTap: () => context.go('/users/${person.id}'),
@@ -278,36 +314,47 @@ class _HomePageState extends ConsumerState<HomePage> {
                             children: [
                               PersonAvatar(person, size: 44),
                               const Spacer(),
-                              Icon(
-                                FLucideIcons.star,
-                                size: 13,
-                                color: const Color(0xFFE5AE42),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                person.rating == 0
-                                    ? 'Новичок'
-                                    : person.rating.toStringAsFixed(1),
-                                style: const TextStyle(fontSize: 11),
-                              ),
+                              if (person.rating > 0) ...[
+                                const Icon(
+                                  FLucideIcons.star,
+                                  size: 13,
+                                  color: muted,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  person.rating.toStringAsFixed(1),
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                              ] else
+                                Text(
+                                  l.homeNewcomer,
+                                  style: const TextStyle(
+                                    color: muted,
+                                    fontSize: 11,
+                                  ),
+                                ),
                             ],
                           ),
-                          const SizedBox(height: 15),
+                          const SizedBox(height: 16),
                           Text(
                             person.name,
-                            style: const TextStyle(fontWeight: FontWeight.w700),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 8),
                           Text(
                             person.specialty.isEmpty
-                                ? 'Открыт к сотрудничеству'
+                                ? l.homeOpenToWork
                                 : person.specialty,
-                            style: const TextStyle(color: muted, fontSize: 12),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: muted,
+                              height: 1.5,
+                            ),
                           ),
-                          const SizedBox(height: 15),
+                          const SizedBox(height: 16),
                           Wrap(
-                            spacing: 5,
-                            runSpacing: 5,
+                            spacing: 6,
+                            runSpacing: 6,
                             children: person.skills
                                 .take(2)
                                 .map((s) => Tag(s, color: muted))
@@ -323,293 +370,59 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
         ),
         const SizedBox(height: 40),
-        Panel(
-          color: ref.watch(themeProvider)
-              ? const Color(0xFF252C20)
-              : const Color(0xFFF1F6E8),
-          padding: 28,
-          child: Row(
-            children: [
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'У тебя есть небольшая задача?',
-                      style: TextStyle(
-                        fontSize: 23,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -.7,
-                      ),
-                    ),
-                    SizedBox(height: 9),
-                    Text(
-                      'Для кого-то она может стать большим первым шагом.',
-                      style: TextStyle(color: muted, height: 1.6),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              FButton(
-                mainAxisSize: MainAxisSize.min,
-                onPress: () => context.go('/tasks/new'),
-                child: const Text('Создать заказ'),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 40),
-        Container(height: 1, color: edge(context)),
-        const SizedBox(height: 24),
-        const Text(
-          'firstcase     Первый заказ. Первый кейс. Реальная репутация.',
-          style: TextStyle(color: muted, fontSize: 12),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Сделано для тех, кто начинает. Бишкек, Кыргызстан ♡',
-          style: TextStyle(color: muted, fontSize: 11),
-        ),
+        Divider(color: edge(context)),
         const SizedBox(height: 20),
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 24,
+          runSpacing: 12,
+          children: [
+            const Brand(width: 112),
+            Text(
+              l.homeFooter,
+              style: const TextStyle(fontSize: 12, color: muted),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
       ],
     );
   }
 }
 
 class _Section extends StatelessWidget {
-  const _Section(this.title, this.subtitle, {this.action});
+  const _Section(this.title, {this.action});
   final String title;
-  final String subtitle;
   final Widget? action;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 22),
-    child: Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -.7,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                subtitle,
-                style: const TextStyle(fontSize: 12, color: muted),
-              ),
-            ],
+    padding: const EdgeInsets.only(bottom: 20),
+    child: LayoutBuilder(
+      builder: (context, constraints) {
+        final heading = Text(
+          title,
+          style: const TextStyle(
+            fontSize: 23,
+            letterSpacing: -.4,
+            fontWeight: FontWeight.w600,
           ),
-        ),
-        if (action != null && MediaQuery.sizeOf(context).width > 550) action!,
-      ],
-    ),
-  );
-}
-
-class _Benefit extends StatelessWidget {
-  const _Benefit(this.icon, this.title, this.subtitle, this.width);
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final double width;
-  @override
-  Widget build(BuildContext context) => SizedBox(
-    width: width > 800 ? (width - 36) / 3 : width,
-    child: Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: accent.withValues(alpha: .06),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: accent, size: 20),
-        ),
-        const SizedBox(width: 13),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                subtitle,
-                style: const TextStyle(color: muted, fontSize: 11),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-class _HeroArt extends StatelessWidget {
-  const _HeroArt();
-  @override
-  Widget build(BuildContext context) => SizedBox(
-    height: 330,
-    child: Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Positioned(
-          left: 40,
-          top: 15,
-          child: Container(
-            width: 280,
-            height: 280,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: .07),
-              shape: BoxShape.circle,
-            ),
-          ),
-        ),
-        Positioned(
-          right: 0,
-          top: 20,
-          child: Transform.rotate(
-            angle: .13,
-            child: Container(
-              width: 130,
-              height: 145,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: lime,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: const Column(
+        );
+        return constraints.maxWidth < 550
+            ? Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    FLucideIcons.sparkles,
-                    size: 30,
-                    color: Color(0xFF393D29),
-                  ),
-                  Spacer(),
-                  Text(
-                    'Твой первый\n«Получилось!»',
-                    style: TextStyle(
-                      color: Color(0xFF393D29),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
-                  ),
+                  heading,
+                  if (action != null) ...[const SizedBox(height: 8), action!],
                 ],
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 24,
-          top: 53,
-          child: Transform.rotate(
-            angle: -.08,
-            child: Container(
-              width: 255,
-              height: 238,
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                color: surface(context),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: accent.withValues(alpha: .12),
-                    blurRadius: 35,
-                    offset: const Offset(0, 15),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              )
+            : Row(
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: accent.withValues(alpha: .1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(
-                          FLucideIcons.folderCheck,
-                          color: accent,
-                        ),
-                      ),
-                      const Spacer(),
-                      const Tag('ПОДТВЕРЖДЕНО', color: Color(0xFF5E8B42)),
-                    ],
-                  ),
-                  const SizedBox(height: 22),
-                  const Text(
-                    'Мой первый кейс',
-                    style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(height: 7, width: 165, color: edge(context)),
-                  const SizedBox(height: 8),
-                  Container(height: 7, width: 125, color: edge(context)),
-                  const Spacer(),
-                  const Text(
-                    '★ ★ ★ ★ ★',
-                    style: TextStyle(
-                      color: Color(0xFFEDB94A),
-                      fontSize: 22,
-                      letterSpacing: 3,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Реальная работа. Честный отзыв.',
-                    style: TextStyle(color: muted, fontSize: 10),
-                  ),
+                  Expanded(child: heading),
+                  ?action,
                 ],
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          right: -3,
-          bottom: 11,
-          child: Transform.rotate(
-            angle: .05,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-              decoration: BoxDecoration(
-                color: accent,
-                borderRadius: BorderRadius.circular(13),
-              ),
-              child: const Row(
-                children: [
-                  Icon(FLucideIcons.badgeCheck, color: lime, size: 24),
-                  SizedBox(width: 10),
-                  Text(
-                    '+1 к опыту\n+100 к уверенности',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      height: 1.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
+              );
+      },
     ),
   );
 }

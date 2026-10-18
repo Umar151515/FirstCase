@@ -1,35 +1,23 @@
 {
-    "name": "firstcase",
-    "short_name": "firstcase",
+    "name": "FirstCase",
+    "short_name": "FirstCase",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#FCFCFD",
-    "theme_color": "#6554E8",
-    "description": "Первый заказ. Первый кейс. Реальная репутация.",
+    "background_color": "#FEFDFC",
+    "theme_color": "#174687",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
         {
-            "src": "icons/Icon-192.png",
+            "src": "icons/app-192.png",
             "sizes": "192x192",
             "type": "image/png"
         },
         {
-            "src": "icons/Icon-512.png",
-            "sizes": "512x512",
-            "type": "image/png"
-        },
-        {
-            "src": "icons/Icon-maskable-192.png",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "maskable"
-        },
-        {
-            "src": "icons/Icon-maskable-512.png",
+            "src": "icons/app-512.png",
             "sizes": "512x512",
             "type": "image/png",
-            "purpose": "maskable"
+            "purpose": "any maskable"
         }
     ]
 }

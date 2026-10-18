@@ -1,3 +1,5 @@
+import '../../../core/l10n/l10n.dart';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:forui/forui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,7 +39,7 @@ class ProfilePage extends ConsumerWidget {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          PersonAvatar(person, size: 74),
+                          PersonAvatar(person, size: 84),
                           const SizedBox(width: 22),
                           Expanded(
                             child: Column(
@@ -54,7 +56,7 @@ class ProfilePage extends ConsumerWidget {
                                 const SizedBox(height: 8),
                                 Text(
                                   person.specialty.isEmpty
-                                      ? 'Открыт к новым возможностям'
+                                      ? context.l10n.openToOpportunities
                                       : person.specialty,
                                   style: const TextStyle(color: muted),
                                 ),
@@ -72,7 +74,7 @@ class ProfilePage extends ConsumerWidget {
                               variant: .outline,
                               mainAxisSize: MainAxisSize.min,
                               onPress: () => context.go('/profile/edit'),
-                              child: const Text('Редактировать'),
+                              child: Text(context.l10n.edit),
                             ),
                         ],
                       ),
@@ -85,19 +87,19 @@ class ProfilePage extends ConsumerWidget {
                             person.rating == 0
                                 ? '—'
                                 : person.rating.toStringAsFixed(1),
-                            'Рейтинг',
+                            context.l10n.rating,
                           ),
                           _Stat(
                             '${person.json['review_count'] ?? 0}',
-                            'Отзывов',
+                            context.l10n.statReviews,
                           ),
                           _Stat(
                             '${person.json['completed_orders'] ?? 0}',
-                            'Завершено заказов',
+                            context.l10n.completedOrders,
                           ),
                           _Stat(
                             '${person.json['verified_cases'] ?? 0}',
-                            'Подтверждённых кейсов',
+                            context.l10n.statVerifiedCases,
                           ),
                         ],
                       ),
@@ -140,17 +142,17 @@ class ProfilePage extends ConsumerWidget {
                             FButton(
                               variant: .outline,
                               onPress: () => context.go('/profile/edit'),
-                              child: const Text('Настроить профиль'),
+                              child: Text(context.l10n.configureProfile),
                             ),
                             FButton(
                               variant: .outline,
                               onPress: () => context.go('/tips'),
-                              child: const Text('QR для чаевых'),
+                              child: Text(context.l10n.tipsQr),
                             ),
                             FButton(
                               variant: .ghost,
                               onPress: () => context.go('/reports'),
-                              child: const Text('Мои жалобы'),
+                              child: Text(context.l10n.myReports),
                             ),
                             if (person.admin)
                               FButton(
@@ -159,10 +161,10 @@ class ProfilePage extends ConsumerWidget {
                                   FLucideIcons.shieldCheck,
                                   size: 16,
                                 ),
-                                child: const Text('Администрирование'),
+                                child: Text(context.l10n.adminSection),
                               ),
                             ActionButton(
-                              'Выйти',
+                              context.l10n.signOut,
                               secondary: true,
                               action: () async {
                                 await ref
@@ -175,14 +177,14 @@ class ProfilePage extends ConsumerWidget {
                             FButton(
                               variant: .outline,
                               onPress: () => modal(context, TipsViewer(userId)),
-                              child: const Text('Поблагодарить ♡'),
+                              child: Text(context.l10n.thankShort),
                             ),
                             if (session != null)
                               FButton(
                                 variant: .ghost,
                                 onPress: () =>
                                     modal(context, ReportForm('user', userId)),
-                                child: const Text('Пожаловаться'),
+                                child: Text(context.l10n.report),
                               ),
                           ],
                         ],
@@ -192,13 +194,13 @@ class ProfilePage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 32),
                 PageTitle(
-                  own ? 'Моё портфолио' : 'Портфолио',
-                  subtitle: 'Опыт, подтверждённый реальными делами.',
+                  own ? context.l10n.myPortfolio : context.l10n.portfolio,
+                  subtitle: context.l10n.portfolioSubtitle,
                   action: own
                       ? FButton(
                           variant: .outline,
                           onPress: () => context.go('/portfolio/new'),
-                          child: const Text('Добавить работу'),
+                          child: Text(context.l10n.addWork),
                         )
                       : null,
                 ),
@@ -209,9 +211,9 @@ class ProfilePage extends ConsumerWidget {
                   builder: (data) {
                     final cases = items(data);
                     return cases.isEmpty
-                        ? const StateMessage(
-                            'Здесь будет первый кейс',
-                            subtitle: 'Выполните задачу и сохраните историю своего успеха.',
+                        ? StateMessage(
+                            context.l10n.portfolioNoWorks,
+                            subtitle: context.l10n.portfolioNoWorksHint,
                             icon: FLucideIcons.folderHeart,
                           )
                         : PortfolioGrid(cases);
@@ -236,10 +238,10 @@ class _Stat extends StatelessWidget {
     children: [
       Text(
         value,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.w800,
-          color: accent,
+          color: context.theme.colors.primary,
         ),
       ),
       const SizedBox(height: 6),

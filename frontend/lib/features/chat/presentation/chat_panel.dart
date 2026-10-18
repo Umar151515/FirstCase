@@ -1,3 +1,5 @@
+import '../../../core/l10n/l10n.dart';
+
 import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
@@ -8,7 +10,7 @@ import 'package:intl/intl.dart';
 import '../../../core/providers.dart';
 import '../../../shared/models/models.dart';
 import '../../../shared/widgets/ui.dart';
-import '../../../shared/widgets/attachment_button.dart';
+import '../../../shared/widgets/media.dart';
 
 class ChatPanel extends ConsumerStatefulWidget {
   const ChatPanel(this.orderId, {super.key});
@@ -68,21 +70,29 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(FLucideIcons.messagesSquare, size: 20, color: accent),
+              Icon(
+                FLucideIcons.messagesSquare,
+                size: 20,
+                color: context.theme.colors.primary,
+              ),
               SizedBox(width: 10),
               Text(
-                'Рабочий чат',
+                context.l10n.chatTitle,
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
               ),
               Spacer(),
-              Tag('Личный', color: muted, icon: FLucideIcons.lockKeyhole),
+              Tag(
+                context.l10n.chatPrivate,
+                color: muted,
+                icon: FLucideIcons.lockKeyhole,
+              ),
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Видят только участники заказа. Обновляется каждые 5 секунд.',
+          Text(
+            context.l10n.chatPrivacyHint,
             style: TextStyle(fontSize: 11, color: muted),
           ),
           const SizedBox(height: 20),
@@ -95,7 +105,7 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
                   followLatest = true;
                   ref.invalidate(resourceProvider(path));
                 }),
-                child: const Text('К новым сообщениям ↓'),
+                child: Text(context.l10n.chatNewMessages),
               ),
             ),
           SizedBox(
@@ -131,9 +141,9 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
                   });
                 }
                 if (list.isEmpty) {
-                  return const StateMessage(
-                    'Начните разговор',
-                    subtitle: 'Уточните детали и договоритесь о первом шаге.',
+                  return StateMessage(
+                    context.l10n.chatEmpty,
+                    subtitle: context.l10n.chatEmptyHint,
                     icon: FLucideIcons.messagesSquare,
                   );
                 }
@@ -161,9 +171,9 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
                               children: [
                                 Text(
                                   '${(message['author'] as Map)['display_name']}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11,
-                                    color: accent,
+                                    color: context.theme.colors.primary,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -182,16 +192,10 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
                                     .isNotEmpty)
                                   Padding(
                                     padding: const EdgeInsets.only(top: 8),
-                                    child: Wrap(
-                                      spacing: 7,
-                                      runSpacing: 7,
-                                      children:
-                                          (message['attachment_ids'] as List)
-                                              .map(
-                                                (id) =>
-                                                    AttachmentButton(id as int),
-                                              )
-                                              .toList(),
+                                    child: AttachmentGallery(
+                                      attachmentIds: List<int>.from(
+                                        message['attachment_ids'] as List,
+                                      ),
                                     ),
                                   ),
                                 const SizedBox(height: 6),
@@ -199,7 +203,11 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      DateFormat('HH:mm · d MMM', 'ru').format(
+                                      DateFormat(
+                                        'HH:mm · d MMM',
+                                        Localizations.localeOf(context)
+                                            .languageCode,
+                                      ).format(
                                         DateTime.parse(
                                           message['created_at'] as String,
                                         ).toLocal(),
@@ -249,7 +257,7 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
                                     followLatest = false;
                                     lastCount = -1;
                                   }),
-                            child: const Text('Раньше'),
+                            child: Text(context.l10n.earlier),
                           ),
                           const SizedBox(width: 12),
                           FButton(
@@ -265,7 +273,7 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
                                         (data['total'] as int);
                                     lastCount = -1;
                                   }),
-                            child: const Text('Позже'),
+                            child: Text(context.l10n.later),
                           ),
                         ],
                       ),
@@ -275,11 +283,11 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
               },
               loading: () => const Center(child: FCircularProgress()),
               error: (e, _) => StateMessage(
-                'Чат недоступен',
+                context.l10n.chatUnavailable,
                 subtitle: '$e',
                 action: FButton(
                   onPress: () => ref.invalidate(resourceProvider(path)),
-                  child: const Text('Повторить'),
+                  child: Text(context.l10n.retry),
                 ),
               ),
             ),
@@ -290,7 +298,7 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
               controller: text,
               onChange: (v) => saveDraft(v.text),
             ),
-            hint: 'Напишите сообщение…',
+            hint: context.l10n.chatMessageHint,
             maxLines: 3,
           ),
           const SizedBox(height: 12),
@@ -299,11 +307,11 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
             onChange: (v) => attachments = v,
           ),
           ActionButton(
-            'Отправить',
+            context.l10n.send,
             icon: FLucideIcons.send,
             action: () async {
               if (text.text.trim().isEmpty && attachments.isEmpty) {
-                throw Exception('Напишите сообщение или прикрепите файл');
+                throw Exception(context.l10n.chatMessageRequired);
               }
               await ref
                   .read(taskRepositoryProvider)

@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/providers.dart';
+import '../../../core/l10n/l10n.dart';
 import '../../../shared/models/models.dart';
 import '../../../shared/widgets/ui.dart';
-import '../../../shared/widgets/attachment_button.dart';
+import '../../../shared/widgets/media.dart';
+import 'ai_policy.dart';
 
 class TaskDetailPage extends ConsumerWidget {
   const TaskDetailPage(this.id, {super.key});
@@ -20,7 +22,7 @@ class TaskDetailPage extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         prefix: const Icon(FLucideIcons.arrowLeft, size: 15),
         onPress: () => context.go('/tasks'),
-        child: const Text('Все задачи'),
+        child: Text(context.l10n.homeSeeAll),
       ),
       const SizedBox(height: 20),
       ResourceView(
@@ -36,19 +38,34 @@ class TaskDetailPage extends ConsumerWidget {
                 spacing: 8,
                 children: [
                   Tag(task.category),
-                  Tag(statusLabel(task.status), color: const Color(0xFF5E8B42)),
+                  Tag(aiPolicyLabel(context, task.aiPolicy), color: muted),
+                  Tag(
+                    statusLabel(context, task.status),
+                    color: const Color(0xFF5E8B42),
+                  ),
                 ],
               ),
               const SizedBox(height: 20),
               PageTitle(
                 task.title,
-                subtitle:
-                    'Опубликовано ${dateLabel(task.json['created_at'])} · ${task.json['city'] ?? 'Удалённо'}',
+                subtitle: context.l10n.publishedAt(
+                  dateLabel(context, task.json['created_at']),
+                  task.json['city'] as String? ?? context.l10n.remote,
+                ),
               ),
               Panel(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (task.coverId != null) ...[
+                      ProtectedImage(
+                        attachmentId: task.coverId!,
+                        height: 300,
+                        width: double.infinity,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      const SizedBox(height: 26),
+                    ],
                     Row(
                       children: [
                         PersonAvatar(task.customer),
@@ -64,8 +81,8 @@ class TaskDetailPage extends ConsumerWidget {
                                 ),
                               ),
                               const SizedBox(height: 5),
-                              const Text(
-                                'Заказчик',
+                              Text(
+                                context.l10n.roleCustomer,
                                 style: TextStyle(color: muted, fontSize: 12),
                               ),
                             ],
@@ -76,13 +93,13 @@ class TaskDetailPage extends ConsumerWidget {
                           mainAxisSize: MainAxisSize.min,
                           onPress: () =>
                               context.go('/users/${task.customerId}'),
-                          child: const Text('Профиль'),
+                          child: Text(context.l10n.navProfile),
                         ),
                       ],
                     ),
                     const SizedBox(height: 28),
-                    const Text(
-                      'Что нужно сделать',
+                    Text(
+                      context.l10n.taskDescription,
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -94,8 +111,8 @@ class TaskDetailPage extends ConsumerWidget {
                       style: const TextStyle(height: 1.8),
                     ),
                     const SizedBox(height: 26),
-                    const Text(
-                      'Какой результат ожидается',
+                    Text(
+                      context.l10n.taskExpectedResult,
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -112,17 +129,19 @@ class TaskDetailPage extends ConsumerWidget {
                       runSpacing: 10,
                       children: [
                         Tag(
-                          'Срок: ${dateLabel(task.deadline)}',
+                          context.l10n.deadlineLabel(
+                            dateLabel(context, task.deadline),
+                          ),
                           icon: FLucideIcons.calendarDays,
                         ),
                         Tag(
-                          '${task.revisions} правок',
+                          context.l10n.revisionCount(task.revisions),
                           icon: FLucideIcons.refreshCw,
                         ),
                         Tag(
                           task.tips
-                              ? 'Добровольные чаевые'
-                              : 'Бесплатно · за опыт',
+                              ? context.l10n.voluntaryTips
+                              : context.l10n.freeForExperience,
                           icon: FLucideIcons.heart,
                         ),
                       ],
@@ -130,12 +149,10 @@ class TaskDetailPage extends ConsumerWidget {
                     if ((task.json['attachment_ids'] as List? ?? [])
                         .isNotEmpty) ...[
                       const SizedBox(height: 22),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 8,
-                        children: (task.json['attachment_ids'] as List)
-                            .map((id) => AttachmentButton(id as int))
-                            .toList(),
+                      AttachmentGallery(
+                        attachmentIds: List<int>.from(
+                          task.json['attachment_ids'] as List,
+                        ).where((id) => id != task.coverId).toList(),
                       ),
                     ],
                     const SizedBox(height: 28),
@@ -147,23 +164,29 @@ class TaskDetailPage extends ConsumerWidget {
                           FButton(
                             onPress: () => user == null
                                 ? context.go('/login')
-                                : modal(context, ApplicationForm(id)),
+                                : modal(
+                                    context,
+                                    ApplicationForm(
+                                      id,
+                                      aiPolicy: task.aiPolicy,
+                                    ),
+                                  ),
                             prefix: const Icon(FLucideIcons.send, size: 16),
-                            child: const Text('Откликнуться на задачу'),
+                            child: Text(context.l10n.applyForTask),
                           ),
                         if (task.status == 'published' && owner) ...[
                           FButton(
                             onPress: () => context.go('/tasks/$id/edit'),
-                            child: const Text('Редактировать'),
+                            child: Text(context.l10n.edit),
                           ),
                           ActionButton(
-                            'Отменить задачу',
+                            context.l10n.cancelTask,
                             secondary: true,
                             action: () async {
                               if (await confirm(
                                 context,
-                                'Отменить задачу?',
-                                'Она больше не будет доступна для откликов.',
+                                context.l10n.cancelTaskTitle,
+                                context.l10n.cancelTaskHint,
                               )) {
                                 await mutate(ref, '/tasks/$id/cancel');
                               }
@@ -175,7 +198,7 @@ class TaskDetailPage extends ConsumerWidget {
                             variant: .ghost,
                             onPress: () =>
                                 modal(context, ReportForm('task', id)),
-                            child: const Text('Пожаловаться'),
+                            child: Text(context.l10n.report),
                           ),
                       ],
                     ),
@@ -185,7 +208,9 @@ class TaskDetailPage extends ConsumerWidget {
               const SizedBox(height: 28),
               if (user != null) ...[
                 Text(
-                  owner ? 'Отклики исполнителей' : 'Мой отклик',
+                  owner
+                      ? context.l10n.performerApplications
+                      : context.l10n.myApplication,
                   style: const TextStyle(
                     fontSize: 23,
                     fontWeight: FontWeight.w700,
@@ -199,11 +224,11 @@ class TaskDetailPage extends ConsumerWidget {
                     if (applications.isEmpty) {
                       return StateMessage(
                         owner
-                            ? 'Первые отклики уже в пути'
-                            : 'Станьте частью этой истории',
+                            ? context.l10n.taskApplicationsEmpty
+                            : context.l10n.taskNotApplied,
                         subtitle: owner
-                            ? 'Исполнители увидят вашу задачу в каталоге.'
-                            : 'Расскажите, почему хотите взяться за задачу.',
+                            ? context.l10n.applicationsComingHint
+                            : context.l10n.joinStoryHint,
                       );
                     }
                     return Column(
@@ -233,6 +258,7 @@ class TaskDetailPage extends ConsumerWidget {
                                     ),
                                     Tag(
                                       statusLabel(
+                                        context,
                                         application['status'] as String,
                                       ),
                                     ),
@@ -254,7 +280,12 @@ class TaskDetailPage extends ConsumerWidget {
                                   ),
                                 const SizedBox(height: 14),
                                 Text(
-                                  'Предлагаемый срок: ${dateLabel(application['proposed_deadline'])}',
+                                  context.l10n.proposedDeadlineLabel(
+                                    dateLabel(
+                                      context,
+                                      application['proposed_deadline'],
+                                    ),
+                                  ),
                                   style: const TextStyle(
                                     color: muted,
                                     fontSize: 12,
@@ -270,17 +301,19 @@ class TaskDetailPage extends ConsumerWidget {
                                       mainAxisSize: MainAxisSize.min,
                                       onPress: () =>
                                           context.go('/users/${person.id}'),
-                                      child: const Text('Профиль и портфолио'),
+                                      child: Text(
+                                        context.l10n.profileAndPortfolio,
+                                      ),
                                     ),
                                     if (application['status'] == 'pending' &&
                                         owner) ...[
                                       ActionButton(
-                                        'Выбрать исполнителя',
+                                        context.l10n.choosePerformer,
                                         action: () async {
                                           if (!await confirm(
                                             context,
-                                            'Начать работу вместе?',
-                                            'После выбора исполнителя откроется заказ с личным чатом.',
+                                            context.l10n.choosePerformerTitle,
+                                            context.l10n.choosePerformerHint,
                                           )) {
                                             return;
                                           }
@@ -296,7 +329,7 @@ class TaskDetailPage extends ConsumerWidget {
                                         },
                                       ),
                                       ActionButton(
-                                        'Отклонить',
+                                        context.l10n.reject,
                                         secondary: true,
                                         action: () async {
                                           await mutate(
@@ -309,7 +342,7 @@ class TaskDetailPage extends ConsumerWidget {
                                     if (application['status'] == 'pending' &&
                                         !owner)
                                       ActionButton(
-                                        'Отозвать отклик',
+                                        context.l10n.withdrawApplication,
                                         secondary: true,
                                         action: () async {
                                           await mutate(
@@ -338,8 +371,9 @@ class TaskDetailPage extends ConsumerWidget {
 }
 
 class ApplicationForm extends ConsumerStatefulWidget {
-  const ApplicationForm(this.id, {super.key});
+  const ApplicationForm(this.id, {this.aiPolicy = AiPolicy.allowed, super.key});
   final int id;
+  final AiPolicy aiPolicy;
   @override
   ConsumerState<ApplicationForm> createState() => _ApplicationFormState();
 }
@@ -363,23 +397,35 @@ class _ApplicationFormState extends ConsumerState<ApplicationForm> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const PageTitle(
-          'Ваш первый шаг',
-          subtitle: 'Расскажите, чем задача вам интересна и как вы её решите.',
+        PageTitle(
+          context.l10n.applicationDialogTitle,
+          subtitle: context.l10n.applicationIntro,
         ),
-        Field('Почему вы подходите?', message, minLength: 10, lines: 4),
+        Tag(aiPolicyLabel(context, widget.aiPolicy), color: muted),
+        const SizedBox(height: 12),
+        Text(
+          context.l10n.aiPolicyTerms,
+          style: const TextStyle(color: muted, height: 1.5, fontSize: 12),
+        ),
+        const SizedBox(height: 20),
+        Field(context.l10n.applicationWhyYou, message, minLength: 10, lines: 4),
         Field(
-          'За сколько дней справитесь?',
+          context.l10n.applicationDays,
           days,
           validator: (v) =>
               (int.tryParse(v ?? '') ?? 0) < 1 ||
                   (int.tryParse(v ?? '') ?? 0) > 365
-              ? 'Укажите от 1 до 365 дней'
+              ? context.l10n.daysValidation
               : null,
         ),
-        Field('Дополнительный комментарий', comment, lines: 2, required: false),
+        Field(
+          context.l10n.additionalComment,
+          comment,
+          lines: 2,
+          required: false,
+        ),
         ActionButton(
-          'Отправить отклик',
+          context.l10n.sendApplication,
           action: () async {
             if (!form.currentState!.validate()) return;
             await mutate(
@@ -396,7 +442,7 @@ class _ApplicationFormState extends ConsumerState<ApplicationForm> {
             );
             if (context.mounted) {
               Navigator.pop(context);
-              feedback(context, 'Отклик отправлен заказчику');
+              feedback(context, context.l10n.applicationSent);
             }
           },
         ),

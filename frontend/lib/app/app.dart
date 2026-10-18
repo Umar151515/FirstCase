@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/providers.dart';
+import '../core/l10n/l10n.dart';
 import '../features/auth/presentation/login_page.dart';
 import '../features/home/presentation/home_page.dart';
 import '../features/tasks/presentation/tasks_page.dart';
@@ -101,8 +102,8 @@ final routerProvider = Provider((ref) {
         ],
       ),
     ],
-    errorBuilder: (_, _) =>
-        const Scaffold(body: Center(child: Text('Страница не найдена'))),
+    errorBuilder: (context, _) =>
+        Scaffold(body: Center(child: Text(context.l10n.pageNotFound))),
   );
   ref.onDispose(router.dispose);
   ref.onDispose(refresh.dispose);
@@ -115,19 +116,25 @@ class FirstCaseApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final dark = ref.watch(themeProvider);
     final colors = (dark ? FColors.neutralDark : FColors.neutralLight).copyWith(
-      primary: accent,
-      primaryForeground: Colors.white,
-      background: dark ? const Color(0xFF15151C) : const Color(0xFFFCFCFD),
-      foreground: dark ? const Color(0xFFF1F0F8) : const Color(0xFF242333),
-      border: dark ? const Color(0xFF30303C) : const Color(0xFFECEBF1),
+      primary: dark ? const Color(0xFFAAC9F4) : accent,
+      primaryForeground: dark ? const Color(0xFF102B50) : Colors.white,
+      background: dark ? const Color(0xFF0E1726) : const Color(0xFFFEFDFC),
+      foreground: dark ? const Color(0xFFE9EDF3) : const Color(0xFF18283F),
+      secondary: dark ? const Color(0xFF18273D) : const Color(0xFFF1F4F8),
+      secondaryForeground: dark
+          ? const Color(0xFFE1E8F1)
+          : const Color(0xFF243A56),
+      muted: dark ? const Color(0xFF152238) : const Color(0xFFF3F5F8),
+      mutedForeground: dark ? const Color(0xFFA2AFC2) : const Color(0xFF617087),
+      border: dark ? const Color(0xFF28364B) : const Color(0xFFE0E5EC),
     );
     final theme = FThemeData(colors: colors, touch: true);
     return MaterialApp.router(
-      title: 'FirstCase · Первый опыт начинается здесь',
+      onGenerateTitle: (context) => context.l10n.appTitle,
       debugShowCheckedModeBanner: false,
-      locale: const Locale('ru'),
-      supportedLocales: FLocalizations.supportedLocales,
-      localizationsDelegates: FLocalizations.localizationsDelegates,
+      locale: ref.watch(localeProvider),
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: appLocalizationsDelegates,
       theme: theme.toApproximateMaterialTheme(),
       routerConfig: ref.watch(routerProvider),
       builder: (context, child) => FTheme(

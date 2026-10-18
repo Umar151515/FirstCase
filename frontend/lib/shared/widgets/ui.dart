@@ -2,22 +2,24 @@ import 'package:material_ui/material_ui.dart';
 import 'package:forui/forui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:intl/intl.dart';
 
 import '../../core/providers.dart';
+import '../../core/media/media_repository.dart';
+import '../../core/l10n/l10n.dart';
 import '../models/models.dart';
+import 'brand.dart';
+import 'media.dart';
 
-const accent = Color(0xFF6554E8);
-const lime = Color(0xFFDDF78E);
-const muted = Color(0xFF8B8B9C);
+export 'brand.dart';
+
+const accent = Color(0xFF174687);
+const muted = Color(0xFF7D889A);
 
 Color surface(BuildContext context) => context.theme.colors.background;
 Color ink(BuildContext context) => context.theme.colors.foreground;
 Color edge(BuildContext context) => context.theme.colors.border;
-String dateLabel(dynamic value) {
-  final date = value is DateTime ? value : DateTime.tryParse('$value');
-  return date == null ? '—' : DateFormat('d MMM', 'ru').format(date.toLocal());
-}
+String dateLabel(BuildContext context, dynamic value) =>
+    localizedDate(context, value);
 
 class Panel extends StatelessWidget {
   const Panel({
@@ -40,7 +42,7 @@ class Panel extends StatelessWidget {
         padding: EdgeInsets.all(padding),
         decoration: BoxDecoration(
           color: color ?? surface(context),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: edge(context)),
         ),
         child: child,
@@ -89,10 +91,10 @@ class PageTitle extends StatelessWidget {
               Text(
                 title,
                 style: const TextStyle(
-                  fontSize: 30,
+                  fontSize: 28,
                   height: 1.2,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -1,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -.6,
                 ),
               ),
               if (subtitle != null)
@@ -136,6 +138,7 @@ class _ActionButtonState extends State<ActionButton> {
   bool busy = false;
   @override
   Widget build(BuildContext context) => FButton(
+    mainAxisSize: MainAxisSize.min,
     variant: widget.destructive
         ? .destructive
         : widget.secondary
@@ -161,7 +164,12 @@ class _ActionButtonState extends State<ActionButton> {
         : widget.icon == null
         ? null
         : Icon(widget.icon, size: 17),
-    child: Text(busy ? 'Подождите…' : widget.label),
+    child: Flexible(
+      child: Text(
+        busy ? context.l10n.pleaseWait : widget.label,
+        textAlign: TextAlign.center,
+      ),
+    ),
   );
 }
 
@@ -209,7 +217,7 @@ class Field extends StatelessWidget {
       validator:
           validator ??
           (value) => required && (value?.trim().length ?? 0) < minLength
-              ? 'Введите минимум $minLength символов'
+              ? context.l10n.minCharacters(minLength)
               : null,
       autovalidateMode: AutovalidateMode.onUserInteraction,
     ),
@@ -249,7 +257,9 @@ class ChoiceField extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   variant: value == entry.key ? .primary : .outline,
                   onPress: () => onChange(entry.key),
-                  child: Text(entry.value),
+                  child: Flexible(
+                    child: Text(entry.value, textAlign: TextAlign.center),
+                  ),
                 ),
               )
               .toList(),
@@ -265,31 +275,36 @@ class Tag extends StatelessWidget {
   final Color color;
   final IconData? icon;
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-    decoration: BoxDecoration(
-      color: color.withValues(alpha: .1),
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (icon != null)
-          Padding(
-            padding: const EdgeInsets.only(right: 5),
-            child: Icon(icon, size: 13, color: color),
+  Widget build(BuildContext context) {
+    final tone = color == accent ? context.theme.colors.primary : color;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: tone.withValues(alpha: .1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 5),
+              child: Icon(icon, size: 13, color: tone),
+            ),
+          Flexible(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: tone,
+              ),
+            ),
           ),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: color,
-          ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }
 
 class PersonAvatar extends StatelessWidget {
@@ -301,20 +316,22 @@ class PersonAvatar extends StatelessWidget {
     width: size,
     height: size,
     decoration: BoxDecoration(
-      color: [
-        const Color(0xFFECE5FA),
-        const Color(0xFFE2F0DC),
-        const Color(0xFFFFE6D5),
-      ][person.id % 3],
+      color: accent.withValues(alpha: .1),
       shape: BoxShape.circle,
     ),
     clipBehavior: Clip.antiAlias,
-    child: person.avatar == null
+    child: person.avatarAttachmentId != null
+        ? ProtectedImage(
+            attachmentId: person.avatarAttachmentId!,
+            width: size,
+            height: size,
+          )
+        : person.avatar == null
         ? Center(
             child: Text(
               person.name.isEmpty ? '?' : person.name[0],
               style: TextStyle(
-                color: accent,
+                color: context.theme.colors.primary,
                 fontSize: size * .4,
                 fontWeight: FontWeight.w700,
               ),
@@ -325,8 +342,8 @@ class PersonAvatar extends StatelessWidget {
             fit: BoxFit.cover,
             errorBuilder: (_, _, _) => Center(
               child: Text(
-                person.name[0],
-                style: const TextStyle(color: accent),
+                person.name.isEmpty ? '?' : person.name[0],
+                style: TextStyle(color: context.theme.colors.primary),
               ),
             ),
           ),
@@ -345,10 +362,10 @@ class ResourceView extends ConsumerWidget {
             ? Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.only(bottom: 14),
                     child: Tag(
-                      'Нет сети · показаны сохранённые данные',
+                      context.l10n.offlineData,
                       color: muted,
                       icon: FLucideIcons.wifiOff,
                     ),
@@ -359,12 +376,12 @@ class ResourceView extends ConsumerWidget {
             : builder(data),
         loading: () => const LoadingView(),
         error: (error, _) => StateMessage(
-          'Не получилось загрузить',
+          context.l10n.loadFailed,
           subtitle: '$error',
           icon: FLucideIcons.wifiOff,
           action: FButton(
             onPress: () => ref.invalidate(resourceProvider(path)),
-            child: const Text('Попробовать снова'),
+            child: Text(context.l10n.tryAgain),
           ),
         ),
       );
@@ -373,24 +390,10 @@ class ResourceView extends ConsumerWidget {
 class LoadingView extends StatelessWidget {
   const LoadingView({super.key});
   @override
-  Widget build(BuildContext context) => Column(
-    children: List.generate(
-      3,
-      (i) => Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: Panel(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(height: 15, width: 180, color: edge(context)),
-              const SizedBox(height: 18),
-              Container(height: 12, color: edge(context)),
-              const SizedBox(height: 10),
-              Container(height: 12, width: 240, color: edge(context)),
-            ],
-          ),
-        ),
-      ),
+  Widget build(BuildContext context) => const Center(
+    child: Padding(
+      padding: EdgeInsets.symmetric(vertical: 48),
+      child: BrandLoading(),
     ),
   );
 }
@@ -476,14 +479,14 @@ Future<bool> confirm(
                   child: FButton(
                     variant: .outline,
                     onPress: () => Navigator.pop(context, false),
-                    child: const Text('Назад'),
+                    child: Text(context.l10n.back),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: FButton(
                     onPress: () => Navigator.pop(context, true),
-                    child: const Text('Подтвердить'),
+                    child: Text(context.l10n.confirm),
                   ),
                 ),
               ],
@@ -498,16 +501,24 @@ class UploadField extends ConsumerStatefulWidget {
   const UploadField({
     required this.onChange,
     this.imagesOnly = false,
+    this.initialIds = const [],
     super.key,
   });
   final ValueChanged<List<int>> onChange;
   final bool imagesOnly;
+  final List<int> initialIds;
   @override
   ConsumerState<UploadField> createState() => _UploadFieldState();
 }
 
 class _UploadFieldState extends ConsumerState<UploadField> {
   final List<Json> files = [];
+  @override
+  void initState() {
+    super.initState();
+    files.addAll(widget.initialIds.map((id) => <String, dynamic>{'id': id}));
+  }
+
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 18),
@@ -517,7 +528,9 @@ class _UploadFieldState extends ConsumerState<UploadField> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ActionButton(
-            'Прикрепить ${widget.imagesOnly ? 'изображение' : 'файлы'}',
+            widget.imagesOnly
+                ? context.l10n.attachImage
+                : context.l10n.attachFiles,
             secondary: true,
             icon: FLucideIcons.paperclip,
             action: () async {
@@ -530,27 +543,33 @@ class _UploadFieldState extends ConsumerState<UploadField> {
                     : ['png', 'jpg', 'jpeg', 'webp', 'pdf', 'txt', 'zip'],
               );
               if (result == null) return;
-              for (final file in result.files) {
-                if (file.size > 10 * 1024 * 1024) {
-                  throw Exception('Файл должен быть меньше 10 МБ');
+              if (!context.mounted) return;
+              await withUploadProgress(context, () async {
+                for (final file in result.files) {
+                  if (!context.mounted) return;
+                  if (file.size > 10 * 1024 * 1024) {
+                    throw Exception(context.l10n.mediaFileTooLarge);
+                  }
+                  if (file.bytes == null) continue;
+                  final saved = await ref
+                      .read(mediaRepositoryProvider)
+                      .upload(file.name, file.bytes!);
+                  if (!mounted) return;
+                  setState(() {
+                    if (widget.imagesOnly) files.clear();
+                    files.add(saved);
+                  });
+                  widget.onChange(files.map((f) => f['id'] as int).toList());
                 }
-                if (file.bytes == null) continue;
-                final saved = await ref
-                    .read(apiProvider)
-                    .upload(file.name, file.bytes!);
-                if (!mounted) return;
-                setState(() {
-                  if (widget.imagesOnly) files.clear();
-                  files.add(saved);
-                });
-                widget.onChange(files.map((f) => f['id'] as int).toList());
-              }
+              });
             },
           ),
           const SizedBox(height: 8),
-          const Text(
-            'PNG, JPG, WebP, PDF, TXT, ZIP · до 10 МБ',
-            style: TextStyle(color: muted, fontSize: 11),
+          Text(
+            widget.imagesOnly
+                ? context.l10n.mediaUploadHint
+                : context.l10n.mediaFilesHint,
+            style: const TextStyle(color: muted, fontSize: 11),
           ),
           for (final file in files)
             Padding(
@@ -559,9 +578,15 @@ class _UploadFieldState extends ConsumerState<UploadField> {
                 children: [
                   const Icon(FLucideIcons.file, size: 15),
                   const SizedBox(width: 8),
-                  Expanded(child: Text(file['filename'] as String)),
+                  Expanded(
+                    child: Text(
+                      file['filename'] as String? ??
+                          context.l10n.mediaFileLabel(file['id'] as int),
+                    ),
+                  ),
                   FButton.icon(
                     variant: .ghost,
+                    semanticsLabel: context.l10n.mediaRemoveFile,
                     onPress: () {
                       setState(() => files.remove(file));
                       widget.onChange(
@@ -617,28 +642,30 @@ class _ReportFormState extends ConsumerState<ReportForm> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const PageTitle(
-          'Сообщить о нарушении',
-          subtitle: 'Жалобу рассмотрит команда FirstCase.',
-        ),
+        PageTitle(context.l10n.reportTitle, subtitle: context.l10n.reportIntro),
         ChoiceField(
-          'Причина',
+          context.l10n.reason,
           value: reason,
-          options: const {
-            'spam': 'Спам',
-            'fraud': 'Мошенничество',
-            'abuse': 'Оскорбления',
-            'prohibited_content': 'Запрещённый контент',
-            'agreement_violation': 'Нарушение договорённостей',
-            'rating_manipulation': 'Накрутка',
-            'other': 'Другое',
+          options: {
+            'spam': context.l10n.reasonSpam,
+            'fraud': context.l10n.reasonFraud,
+            'abuse': context.l10n.reasonAbuse,
+            'prohibited_content': context.l10n.reasonProhibited,
+            'agreement_violation': context.l10n.reasonAgreement,
+            'rating_manipulation': context.l10n.reasonRating,
+            'other': context.l10n.categoryOther,
           },
           onChange: (v) => setState(() => reason = v),
         ),
-        Field('Что произошло?', description, lines: 4, minLength: 10),
+        Field(
+          context.l10n.reportWhatHappened,
+          description,
+          lines: 4,
+          minLength: 10,
+        ),
         UploadField(onChange: (v) => files = v),
         ActionButton(
-          'Отправить жалобу',
+          context.l10n.sendReport,
           action: () async {
             if (!form.currentState!.validate()) return;
             await mutate(
@@ -654,7 +681,7 @@ class _ReportFormState extends ConsumerState<ReportForm> {
             );
             if (context.mounted) {
               Navigator.pop(context);
-              feedback(context, 'Жалоба отправлена');
+              feedback(context, context.l10n.reportSent);
             }
           },
         ),

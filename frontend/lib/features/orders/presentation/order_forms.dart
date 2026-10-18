@@ -3,11 +3,14 @@ import 'package:forui/forui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/models/models.dart';
+import '../../../core/l10n/l10n.dart';
 import '../../../shared/widgets/ui.dart';
+import '../../tasks/presentation/ai_policy.dart';
 
 class SubmitForm extends ConsumerStatefulWidget {
-  const SubmitForm(this.id, {super.key});
+  const SubmitForm(this.id, {this.aiPolicy = AiPolicy.allowed, super.key});
   final int id;
+  final AiPolicy aiPolicy;
   @override
   ConsumerState<SubmitForm> createState() => _SubmitFormState();
 }
@@ -16,11 +19,14 @@ class _SubmitFormState extends ConsumerState<SubmitForm> {
   final form = GlobalKey<FormState>();
   final description = TextEditingController();
   final links = TextEditingController();
+  final aiDisclosure = TextEditingController();
+  AiUsage aiUsage = AiUsage.noAi;
   List<int> files = [];
   @override
   void dispose() {
     description.dispose();
     links.dispose();
+    aiDisclosure.dispose();
     super.dispose();
   }
 
@@ -30,26 +36,46 @@ class _SubmitFormState extends ConsumerState<SubmitForm> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const PageTitle(
-          'Момент «готово»',
-          subtitle:
-              'Расскажите о результате и приложите материалы для проверки.',
-        ),
-        Field('Что сделано', description, lines: 5, minLength: 10),
+        PageTitle(context.l10n.workResult, subtitle: context.l10n.submitIntro),
+        Tag(aiPolicyLabel(context, widget.aiPolicy), color: muted),
+        const SizedBox(height: 18),
         Field(
-          'Ссылки на результат · по одной на строку',
+          context.l10n.workDescription,
+          description,
+          lines: 5,
+          minLength: 10,
+        ),
+        Field(
+          context.l10n.resultLinks,
           links,
           lines: 2,
           required: false,
           validator: (value) =>
               parseLinks(value ?? '')
                   .any((link) => Uri.tryParse(link)?.scheme != 'https')
-              ? 'Разрешены только HTTPS-ссылки'
+              ? context.l10n.httpsLinksOnly
               : null,
         ),
         UploadField(onChange: (v) => files = v),
+        ChoiceField(
+          context.l10n.aiUsageLabel,
+          value: aiUsage.code,
+          options: aiUsageOptions(context, policy: widget.aiPolicy),
+          onChange: (value) =>
+              setState(() => aiUsage = AiUsage.fromCode(value)),
+        ),
+        if (aiUsage != AiUsage.noAi)
+          Field(
+            context.l10n.aiDisclosureLabel,
+            aiDisclosure,
+            lines: 3,
+            hint: context.l10n.aiDisclosureHint,
+            validator: (value) => (value?.trim().length ?? 0) < 5
+                ? context.l10n.aiDisclosureRequired
+                : null,
+          ),
         ActionButton(
-          'Сдать работу на проверку',
+          context.l10n.submitForReview,
           icon: FLucideIcons.send,
           action: () async {
             if (!form.currentState!.validate()) return;
@@ -60,11 +86,15 @@ class _SubmitFormState extends ConsumerState<SubmitForm> {
                 'description': description.text.trim(),
                 'links': parseLinks(links.text),
                 'attachment_ids': files,
+                'ai_usage': aiUsage.code,
+                'ai_disclosure': aiUsage == AiUsage.noAi
+                    ? ''
+                    : aiDisclosure.text.trim(),
               },
             );
             if (context.mounted) {
               Navigator.pop(context);
-              feedback(context, 'Результат отправлен заказчику');
+              feedback(context, context.l10n.resultSubmitted);
             }
           },
         ),
@@ -101,14 +131,13 @@ class _RevisionFormState extends ConsumerState<RevisionForm> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const PageTitle(
-          'Что нужно поправить?',
-          subtitle:
-              'Опишите изменения подробно и в пределах согласованного задания.',
+        PageTitle(
+          context.l10n.revisionTitle,
+          subtitle: context.l10n.revisionIntro,
         ),
-        Field('Список правок', reason, minLength: 5, lines: 5),
+        Field(context.l10n.revisionList, reason, minLength: 5, lines: 5),
         ActionButton(
-          'Запросить правки',
+          context.l10n.requestRevision,
           action: () async {
             if (!form.currentState!.validate()) return;
             await mutate(
@@ -149,35 +178,69 @@ class _ReviewFormState extends ConsumerState<ReviewForm> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         PageTitle(
-          'Как всё прошло?',
+          context.l10n.reviewTitle,
           subtitle: widget.requiredComment
-              ? 'Ваш отзыв завершит заказ и станет частью реальной репутации исполнителя.'
-              : 'Поблагодарите заказчика за совместную работу. Это необязательно.',
+              ? context.l10n.reviewCustomerHint
+              : context.l10n.reviewPerformerHint,
+        ),
+        ResourceView(
+          '/orders/${widget.id}/deliverables',
+          builder: (data) {
+            final deliveries = items(data);
+            if (deliveries.isEmpty) return const SizedBox.shrink();
+            final finalDelivery = deliveries.last;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Tag(
+                    aiUsageLabel(
+                      context,
+                      AiUsage.fromCode(finalDelivery['ai_usage'] as String?),
+                    ),
+                    color: muted,
+                  ),
+                  if ('${finalDelivery['ai_disclosure'] ?? ''}'.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Text(
+                        finalDelivery['ai_disclosure'] as String,
+                        style: const TextStyle(color: muted, height: 1.5),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
         ),
         Row(
           children: List.generate(
             5,
-            (i) => FButton.icon(
-              variant: .ghost,
-              onPress: () => setState(() => rating = i + 1),
-              child: Icon(
-                FLucideIcons.star,
-                size: 32,
-                color: i < rating ? const Color(0xFFEAB548) : muted,
+            (i) => Expanded(
+              child: FButton.icon(
+                size: .sm,
+                variant: .ghost,
+                onPress: () => setState(() => rating = i + 1),
+                child: Icon(
+                  FLucideIcons.star,
+                  size: 24,
+                  color: i < rating ? const Color(0xFFEAB548) : muted,
+                ),
               ),
             ),
           ),
         ),
         const SizedBox(height: 24),
         Field(
-          'Ваш отзыв',
+          context.l10n.yourReview,
           comment,
           lines: 4,
           required: widget.requiredComment,
           minLength: 5,
         ),
         ActionButton(
-          'Опубликовать отзыв',
+          context.l10n.publishReview,
           action: () async {
             if (!form.currentState!.validate()) return;
             await mutate(
@@ -187,7 +250,7 @@ class _ReviewFormState extends ConsumerState<ReviewForm> {
             );
             if (context.mounted) {
               Navigator.pop(context);
-              feedback(context, 'Спасибо! Отзыв опубликован.');
+              feedback(context, context.l10n.reviewPublished);
             }
           },
         ),
@@ -218,18 +281,18 @@ class _PrivacyFormState extends ConsumerState<PrivacyForm> {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      const PageTitle(
-        'Разрешения на публикацию',
-        subtitle: 'Приватность бесплатна. Разрешите только конкретные материалы. Отправка пустого списка отзовёт все разрешения.',
+      PageTitle(
+        context.l10n.publicationPermissions,
+        subtitle: context.l10n.publicationPermissionsHint,
       ),
       _toggle(
-        'Разрешить раскрытие моей личности',
+        context.l10n.allowIdentity,
         identity,
         () => setState(() => identity = !identity),
       ),
       const SizedBox(height: 18),
-      const Text(
-        'Фрагменты переписки',
+      Text(
+        context.l10n.messageExcerpts,
         style: TextStyle(fontWeight: FontWeight.w700),
       ),
       for (final message in widget.messages)
@@ -242,10 +305,13 @@ class _PrivacyFormState extends ConsumerState<PrivacyForm> {
           }),
         ),
       const SizedBox(height: 18),
-      const Text('Вложения', style: TextStyle(fontWeight: FontWeight.w700)),
+      Text(
+        context.l10n.attachments,
+        style: TextStyle(fontWeight: FontWeight.w700),
+      ),
       for (final id in widget.attachmentIds)
         _toggle(
-          'Файл #$id',
+          context.l10n.mediaFileLabel(id),
           files.contains(id),
           () => setState(() {
             files.contains(id) ? files.remove(id) : files.add(id);
@@ -253,7 +319,7 @@ class _PrivacyFormState extends ConsumerState<PrivacyForm> {
         ),
       const SizedBox(height: 20),
       ActionButton(
-        'Сохранить разрешения',
+        context.l10n.savePermissions,
         action: () async {
           await mutate(
             ref,
@@ -267,7 +333,7 @@ class _PrivacyFormState extends ConsumerState<PrivacyForm> {
           );
           if (context.mounted) {
             Navigator.pop(context);
-            feedback(context, 'Разрешения обновлены');
+            feedback(context, context.l10n.permissionsUpdated);
           }
         },
       ),

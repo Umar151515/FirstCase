@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/providers.dart';
+import '../../../core/l10n/l10n.dart';
 import '../../../shared/models/models.dart';
 import '../../../shared/widgets/ui.dart';
-import '../../../shared/widgets/attachment_button.dart';
+import '../../../shared/widgets/media.dart';
 import '../../auth/presentation/login_page.dart';
+import '../../tasks/presentation/ai_policy.dart';
 
 class PortfolioGrid extends StatelessWidget {
   const PortfolioGrid(this.cases, {super.key});
@@ -34,23 +36,31 @@ class PortfolioGrid extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        height: 120,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: accent.withValues(alpha: .07),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            entry['verified'] == true
-                                ? FLucideIcons.folderCheck
-                                : FLucideIcons.palette,
-                            color: accent,
-                            size: 44,
+                      if (entry['cover_attachment_id'] != null)
+                        ProtectedImage(
+                          attachmentId: entry['cover_attachment_id'] as int,
+                          height: 160,
+                          width: double.infinity,
+                          borderRadius: BorderRadius.circular(8),
+                        )
+                      else
+                        Container(
+                          height: 120,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: accent.withValues(alpha: .07),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              entry['verified'] == true
+                                  ? FLucideIcons.folderCheck
+                                  : FLucideIcons.palette,
+                              color: context.theme.colors.primary,
+                              size: 44,
+                            ),
                           ),
                         ),
-                      ),
                       const SizedBox(height: 18),
                       Text(
                         entry['title'] as String,
@@ -77,14 +87,21 @@ class PortfolioGrid extends StatelessWidget {
                         children: [
                           Tag(
                             entry['verified'] == true
-                                ? 'Подтверждённый кейс'
-                                : 'Личная работа',
+                                ? context.l10n.verifiedCase
+                                : context.l10n.personalWork,
                             icon: entry['verified'] == true
                                 ? FLucideIcons.badgeCheck
                                 : FLucideIcons.brush,
                           ),
                           Tag(
-                            statusLabel(entry['visibility'] as String),
+                            statusLabel(context, entry['visibility'] as String),
+                            color: muted,
+                          ),
+                          Tag(
+                            aiUsageLabel(
+                              context,
+                              AiUsage.fromCode(entry['ai_usage'] as String?),
+                            ),
                             color: muted,
                           ),
                         ],
@@ -123,25 +140,41 @@ class PortfolioDetailPage extends ConsumerWidget {
                 children: [
                   Tag(
                     entry['verified'] == true
-                        ? 'Подтверждено реальным заказом'
-                        : 'Личная работа',
+                        ? context.l10n.verifiedByOrder
+                        : context.l10n.personalWork,
                     icon: FLucideIcons.badgeCheck,
                   ),
-                  Tag(statusLabel(entry['visibility'] as String), color: muted),
+                  Tag(
+                    statusLabel(context, entry['visibility'] as String),
+                    color: muted,
+                  ),
                 ],
               ),
               const SizedBox(height: 20),
               PageTitle(
                 entry['title'] as String,
-                subtitle:
-                    'Завершено ${dateLabel(entry['completed_at'] ?? entry['created_at'])}',
+                subtitle: context.l10n.completedOn(
+                  dateLabel(
+                    context,
+                    entry['completed_at'] ?? entry['created_at'],
+                  ),
+                ),
               ),
               Panel(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'История проекта',
+                    if (entry['cover_attachment_id'] != null) ...[
+                      ProtectedImage(
+                        attachmentId: entry['cover_attachment_id'] as int,
+                        width: double.infinity,
+                        height: 320,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      const SizedBox(height: 26),
+                    ],
+                    Text(
+                      context.l10n.projectStory,
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -153,8 +186,8 @@ class PortfolioDetailPage extends ConsumerWidget {
                       style: const TextStyle(height: 1.8),
                     ),
                     const SizedBox(height: 26),
-                    const Text(
-                      'Результат',
+                    Text(
+                      context.l10n.result,
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -165,17 +198,35 @@ class PortfolioDetailPage extends ConsumerWidget {
                       entry['result'] as String,
                       style: const TextStyle(height: 1.8),
                     ),
+                    const SizedBox(height: 20),
+                    Tag(
+                      aiUsageLabel(
+                        context,
+                        AiUsage.fromCode(entry['ai_usage'] as String?),
+                      ),
+                      color: muted,
+                    ),
+                    if ('${entry['ai_disclosure'] ?? ''}'.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: SelectableText(
+                          entry['ai_disclosure'] as String,
+                          style: const TextStyle(color: muted, height: 1.6),
+                        ),
+                      ),
                     if (entry['customer'] != null) ...[
                       const SizedBox(height: 24),
                       Text(
-                        'Заказчик: ${(entry['customer'] as Map)['display_name']}',
+                        context.l10n.customerLabel(
+                          (entry['customer'] as Map)['display_name'] as String,
+                        ),
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ],
                     if (entry['visibility'] == 'anonymous') ...[
                       const SizedBox(height: 24),
-                      const Tag(
-                        'Личность заказчика защищена',
+                      Tag(
+                        context.l10n.customerIdentityProtected,
                         icon: FLucideIcons.shieldCheck,
                       ),
                     ],
@@ -200,21 +251,15 @@ class PortfolioDetailPage extends ConsumerWidget {
                     if ((evidence['attachments'] as List? ?? [])
                         .isNotEmpty) ...[
                       const SizedBox(height: 24),
-                      const Text(
-                        'Разрешённые материалы',
+                      Text(
+                        context.l10n.permittedMaterials,
                         style: TextStyle(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: (evidence['attachments'] as List)
-                            .map(
-                              (a) => AttachmentButton(
-                                (a as Map)['id'] as int,
-                                filename: a['filename'] as String?,
-                              ),
-                            )
+                      AttachmentGallery(
+                        attachmentIds: (evidence['attachments'] as List)
+                            .map((a) => (a as Map)['id'] as int)
+                            .where((id) => id != entry['cover_attachment_id'])
                             .toList(),
                       ),
                     ],
@@ -239,22 +284,26 @@ class PortfolioDetailPage extends ConsumerWidget {
                           variant: .outline,
                           onPress: () =>
                               context.go('/users/${entry['owner_id']}'),
-                          child: const Text('Профиль автора'),
+                          child: Text(context.l10n.authorProfile),
                         ),
                         if (own)
                           FButton(
                             onPress: () => modal(
                               context,
-                              VisibilityForm(id, entry['visibility'] as String),
+                              VisibilityForm(
+                                id,
+                                entry['visibility'] as String,
+                                coverId: entry['cover_attachment_id'] as int?,
+                              ),
                             ),
-                            child: const Text('Настройки приватности'),
+                            child: Text(context.l10n.privacySettings),
                           ),
                         if (user != null && !own)
                           FButton(
                             variant: .ghost,
                             onPress: () =>
                                 modal(context, ReportForm('portfolio', id)),
-                            child: const Text('Пожаловаться'),
+                            child: Text(context.l10n.report),
                           ),
                       ],
                     ),
@@ -281,6 +330,9 @@ class _PortfolioFormPageState extends ConsumerState<PortfolioFormPage> {
   final title = TextEditingController();
   final description = TextEditingController();
   final result = TextEditingController();
+  final aiDisclosure = TextEditingController();
+  AiUsage aiUsage = AiUsage.noAi;
+  int? coverId;
   String visibility = 'private';
   bool showCustomer = false;
   List<int> uploads = [];
@@ -291,6 +343,7 @@ class _PortfolioFormPageState extends ConsumerState<PortfolioFormPage> {
     title.dispose();
     description.dispose();
     result.dispose();
+    aiDisclosure.dispose();
     super.dispose();
   }
 
@@ -302,11 +355,11 @@ class _PortfolioFormPageState extends ConsumerState<PortfolioFormPage> {
       children: [
         PageTitle(
           widget.orderId == null
-              ? 'Добавить свою работу'
-              : 'Сохраните свой первый успех',
+              ? context.l10n.addPersonalWork
+              : context.l10n.caseFromOrder,
           subtitle: widget.orderId == null
-              ? 'Личная работа будет отмечена как неподтверждённая.'
-              : 'Кейс будет связан с завершённым заказом и подтверждённым опытом.',
+              ? context.l10n.personalWorkHint
+              : context.l10n.verifiedCaseHint,
         ),
         Panel(
           child: Form(
@@ -314,52 +367,97 @@ class _PortfolioFormPageState extends ConsumerState<PortfolioFormPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Field('Название кейса', title, minLength: 5),
+                Field(context.l10n.caseTitle, title, minLength: 5),
                 Field(
-                  'Задача и ваш подход',
+                  context.l10n.caseApproach,
                   description,
                   minLength: 10,
                   lines: 5,
                 ),
-                Field('Что получилось', result, minLength: 5, lines: 4),
+                Field(context.l10n.caseResult, result, minLength: 5, lines: 4),
+                if (widget.orderId == null) ...[
+                  ChoiceField(
+                    context.l10n.aiUsageLabel,
+                    value: aiUsage.code,
+                    options: aiUsageOptions(context),
+                    onChange: (value) =>
+                        setState(() => aiUsage = AiUsage.fromCode(value)),
+                  ),
+                  if (aiUsage != AiUsage.noAi)
+                    Field(
+                      context.l10n.aiDisclosureLabel,
+                      aiDisclosure,
+                      lines: 3,
+                      hint: context.l10n.aiDisclosureHint,
+                      validator: (value) => (value?.trim().length ?? 0) < 5
+                          ? context.l10n.aiDisclosureRequired
+                          : null,
+                    ),
+                ],
                 ChoiceField(
-                  'Кто увидит кейс',
+                  context.l10n.caseAudience,
                   value: visibility,
-                  options: const {
-                    'private': 'Только я',
-                    'anonymous': 'Публично, анонимный заказчик',
-                    'public': 'Публичный кейс',
+                  options: {
+                    'private': context.l10n.onlyMe,
+                    'anonymous': context.l10n.publicAnonymousCustomer,
+                    'public': context.l10n.publicCase,
                   },
-                  onChange: (v) => setState(() => visibility = v),
+                  onChange: (v) => setState(() {
+                    visibility = v;
+                    coverId = null;
+                  }),
                 ),
-                const Text(
-                  'Для анонимного кейса используйте безопасное описание без имён и личных данных. Исходные файлы и переписка автоматически не публикуются.',
+                Text(
+                  context.l10n.anonymousCaseHint,
                   style: TextStyle(color: muted, height: 1.7, fontSize: 12),
                 ),
                 const SizedBox(height: 20),
+                if (visibility == 'anonymous')
+                  Text(
+                    context.l10n.caseCoverAnonymousHint,
+                    style: const TextStyle(
+                      color: muted,
+                      height: 1.6,
+                      fontSize: 12,
+                    ),
+                  )
+                else if (widget.orderId == null || visibility == 'private')
+                  ImageUploadField(
+                    value: coverId,
+                    label: context.l10n.coverPhotoLabel,
+                    onChange: (value) => setState(() => coverId = value),
+                  ),
                 if (widget.orderId == null && visibility != 'anonymous')
                   UploadField(onChange: (v) => uploads = v),
                 if (visibility == 'public') ...[
                   ChoiceField(
-                    'Раскрыть личность заказчика',
+                    context.l10n.revealCustomer,
                     value: '$showCustomer',
-                    options: const {
-                      'false': 'Скрыть',
-                      'true': 'Запросить публикацию с согласия',
+                    options: {
+                      'false': context.l10n.hide,
+                      'true': context.l10n.requestPublicationConsent,
                     },
                     onChange: (v) => setState(() => showCustomer = v == 'true'),
                   ),
                   if (widget.orderId != null) ...[
-                    const Text(
-                      'Выберите конкретные материалы',
+                    Text(
+                      context.l10n.caseCoverConsentHint,
+                      style: const TextStyle(
+                        color: muted,
+                        height: 1.6,
+                        fontSize: 12,
+                      ),
+                    ),
+                    Text(
+                      context.l10n.selectMaterials,
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Сервер опубликует их только при действующем согласии заказчика. Согласие на личность и материалы задаётся в пространстве заказа.',
+                    Text(
+                      context.l10n.materialsConsentHint,
                       style: TextStyle(color: muted, height: 1.6, fontSize: 12),
                     ),
                     ResourceView(
@@ -392,24 +490,89 @@ class _PortfolioFormPageState extends ConsumerState<PortfolioFormPage> {
                     ),
                     ResourceView(
                       '/orders/${widget.orderId}/deliverables',
-                      builder: (data) => Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
+                      builder: (data) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          for (final d in items(data))
-                            for (final fileId
-                                in (d['attachment_ids'] as List? ?? []))
-                              FButton(
-                                variant: attachmentIds.contains(fileId)
-                                    ? .primary
-                                    : .outline,
-                                onPress: () => setState(() {
-                                  attachmentIds.contains(fileId)
-                                      ? attachmentIds.remove(fileId)
-                                      : attachmentIds.add(fileId as int);
-                                }),
-                                child: Text('Файл #$fileId'),
-                              ),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final d in items(data))
+                                for (final fileId in List<int>.from(
+                                  d['attachment_ids'] as List? ?? [],
+                                ))
+                                  FButton(
+                                    variant: attachmentIds.contains(fileId)
+                                        ? .primary
+                                        : .outline,
+                                    onPress: () => setState(() {
+                                      attachmentIds.contains(fileId)
+                                          ? attachmentIds.remove(fileId)
+                                          : attachmentIds.add(fileId);
+                                    }),
+                                    child: Text(
+                                      context.l10n.mediaFileLabel(fileId),
+                                    ),
+                                  ),
+                            ],
+                          ),
+                          const SizedBox(height: 18),
+                          Text(
+                            context.l10n.coverPhotoLabel,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: [
+                              for (final fileId in {
+                                for (final delivery in items(data))
+                                  ...List<int>.from(
+                                    delivery['attachment_ids'] as List? ?? [],
+                                  ),
+                              })
+                                SizedBox(
+                                  width: 150,
+                                  child: ResourceView(
+                                    '/uploads/$fileId/metadata',
+                                    builder: (file) =>
+                                        '${file['mime_type']}'.startsWith(
+                                          'image/',
+                                        )
+                                        ? GestureDetector(
+                                            onTap: () => setState(() {
+                                              coverId = coverId == fileId
+                                                  ? null
+                                                  : fileId;
+                                              if (coverId != null) {
+                                                attachmentIds.add(fileId);
+                                              }
+                                            }),
+                                            child: Container(
+                                              padding: const EdgeInsets.all(3),
+                                              decoration: BoxDecoration(
+                                                border: Border.all(
+                                                  color: coverId == fileId
+                                                      ? accent
+                                                      : edge(context),
+                                                  width: 2,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              child: ProtectedImage(
+                                                attachmentId: fileId,
+                                                height: 100,
+                                                width: 140,
+                                              ),
+                                            ),
+                                          )
+                                        : const SizedBox.shrink(),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -417,7 +580,7 @@ class _PortfolioFormPageState extends ConsumerState<PortfolioFormPage> {
                 ],
                 const SizedBox(height: 24),
                 ActionButton(
-                  'Создать кейс',
+                  context.l10n.createCase,
                   icon: FLucideIcons.folderCheck,
                   action: () async {
                     if (!form.currentState!.validate()) return;
@@ -429,13 +592,24 @@ class _PortfolioFormPageState extends ConsumerState<PortfolioFormPage> {
                         'title': title.text.trim(),
                         'description': description.text.trim(),
                         'result': result.text.trim(),
+                        'ai_usage': aiUsage.code,
+                        'ai_disclosure': aiUsage == AiUsage.noAi
+                            ? ''
+                            : aiDisclosure.text.trim(),
+                        'cover_attachment_id': visibility == 'anonymous'
+                            ? null
+                            : coverId,
                         'visibility': visibility,
-                        'attachment_ids': [
+                        'attachment_ids': {
                           if (widget.orderId == null &&
                               visibility != 'anonymous')
                             ...uploads,
                           if (visibility == 'public') ...attachmentIds,
-                        ],
+                          if (widget.orderId == null &&
+                              visibility != 'anonymous' &&
+                              coverId != null)
+                            coverId!,
+                        }.toList(),
                         'message_ids': visibility == 'public'
                             ? messageIds.toList()
                             : [],
@@ -457,9 +631,10 @@ class _PortfolioFormPageState extends ConsumerState<PortfolioFormPage> {
 }
 
 class VisibilityForm extends ConsumerStatefulWidget {
-  const VisibilityForm(this.id, this.initial, {super.key});
+  const VisibilityForm(this.id, this.initial, {this.coverId, super.key});
   final int id;
   final String initial;
+  final int? coverId;
   @override
   ConsumerState<VisibilityForm> createState() => _VisibilityFormState();
 }
@@ -470,22 +645,22 @@ class _VisibilityFormState extends ConsumerState<VisibilityForm> {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      const PageTitle(
-        'Приватность вашего кейса',
-        subtitle: 'Вы управляете видимостью. Переход в публичный режим сохраняет личность заказчика скрытой.',
+      PageTitle(
+        context.l10n.casePrivacy,
+        subtitle: context.l10n.casePrivacyHint,
       ),
       ChoiceField(
-        'Видимость',
+        context.l10n.visibility,
         value: value,
-        options: const {
-          'private': 'Только мне',
-          'anonymous': 'Анонимно',
-          'public': 'Публично',
+        options: {
+          'private': context.l10n.visibilityPrivate,
+          'anonymous': context.l10n.visibilityAnonymous,
+          'public': context.l10n.visibilityPublic,
         },
         onChange: (v) => setState(() => value = v),
       ),
       ActionButton(
-        'Обновить видимость',
+        context.l10n.updateVisibility,
         action: () async {
           await mutate(
             ref,
@@ -496,11 +671,14 @@ class _VisibilityFormState extends ConsumerState<VisibilityForm> {
               'show_customer': false,
               'message_ids': [],
               'attachment_ids': [],
+              'cover_attachment_id': value == 'anonymous'
+                  ? null
+                  : widget.coverId,
             },
           );
           if (context.mounted) {
             Navigator.pop(context);
-            feedback(context, 'Видимость обновлена');
+            feedback(context, context.l10n.visibilityUpdated);
           }
         },
       ),

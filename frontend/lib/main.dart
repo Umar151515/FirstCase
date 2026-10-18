@@ -9,6 +9,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy();
   await initializeDateFormatting('ru');
+  await initializeDateFormatting('ky');
   runApp(
     ProviderScope(retry: (count, error) => null, child: const FirstCaseApp()),
   );

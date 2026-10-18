@@ -1,3 +1,5 @@
+import '../../../core/l10n/l10n.dart';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:forui/forui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,16 +19,16 @@ class NotificationsPage extends ConsumerWidget {
     return PageBody(
       width: 850,
       children: [
-        const PageTitle(
-          'Важное рядом',
-          subtitle: 'Отклики, сообщения и маленькие победы ваших проектов.',
+        PageTitle(
+          context.l10n.navNotifications,
+          subtitle: context.l10n.notificationsSubtitle,
         ),
         ResourceView(
           '/notifications?limit=100',
           builder: (data) => items(data).isEmpty
-              ? const StateMessage(
-                  'Пока тихо',
-                  subtitle: 'Здесь появятся новости ваших заказов.',
+              ? StateMessage(
+                  context.l10n.notificationsNoNew,
+                  subtitle: context.l10n.notificationsEmptyHint,
                   icon: FLucideIcons.bell,
                 )
               : Column(
@@ -52,7 +54,7 @@ class NotificationsPage extends ConsumerWidget {
                                       ),
                                     ),
                                     if (notification['read_at'] == null)
-                                      const Tag('Новое'),
+                                      Tag(context.l10n.newBadge),
                                   ],
                                 ),
                                 const SizedBox(height: 10),
@@ -67,7 +69,10 @@ class NotificationsPage extends ConsumerWidget {
                                 Row(
                                   children: [
                                     Text(
-                                      dateLabel(notification['created_at']),
+                                      dateLabel(
+                                        context,
+                                        notification['created_at'],
+                                      ),
                                       style: const TextStyle(
                                         color: muted,
                                         fontSize: 11,
@@ -75,7 +80,7 @@ class NotificationsPage extends ConsumerWidget {
                                     ),
                                     const Spacer(),
                                     ActionButton(
-                                      'Открыть',
+                                      context.l10n.open,
                                       secondary: true,
                                       action: () async {
                                         await mutate(
@@ -115,16 +120,16 @@ class ReportsPage extends ConsumerWidget {
     return PageBody(
       width: 850,
       children: [
-        const PageTitle(
-          'Мои обращения',
-          subtitle: 'Следите за рассмотрением жалоб и решениями модерации.',
+        PageTitle(
+          context.l10n.reportsTitle,
+          subtitle: context.l10n.reportsIntro,
         ),
         ResourceView(
           '/reports?limit=100',
           builder: (data) => items(data).isEmpty
-              ? const StateMessage(
-                  'Нет обращений',
-                  subtitle: 'Сообщить о нарушении можно со страницы задачи, заказа, профиля или кейса.',
+              ? StateMessage(
+                  context.l10n.reportsEmpty,
+                  subtitle: context.l10n.reportsEmptyHint,
                   icon: FLucideIcons.shieldCheck,
                 )
               : Column(
@@ -140,14 +145,19 @@ class ReportsPage extends ConsumerWidget {
                                   children: [
                                     Expanded(
                                       child: Text(
-                                        'Обращение #${report['id']}',
+                                        context.l10n.reportLabel(
+                                          report['id'] as int,
+                                        ),
                                         style: const TextStyle(
                                           fontWeight: FontWeight.w700,
                                         ),
                                       ),
                                     ),
                                     Tag(
-                                      statusLabel(report['status'] as String),
+                                      statusLabel(
+                                        context,
+                                        report['status'] as String,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -161,9 +171,11 @@ class ReportsPage extends ConsumerWidget {
                                   Padding(
                                     padding: const EdgeInsets.only(top: 18),
                                     child: Text(
-                                      'Решение модератора: ${report['moderator_comment']}',
-                                      style: const TextStyle(
-                                        color: accent,
+                                      context.l10n.moderatorDecisionLabel(
+                                        report['moderator_comment'] as String,
+                                      ),
+                                      style: TextStyle(
+                                        color: context.theme.colors.primary,
                                         height: 1.7,
                                       ),
                                     ),

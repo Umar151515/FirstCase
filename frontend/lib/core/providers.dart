@@ -7,6 +7,7 @@ import '../features/tasks/data/task_repository.dart';
 import '../shared/models/models.dart';
 import 'api/api_client.dart';
 import 'database/local_database.dart';
+import 'l10n/locale_provider.dart';
 import 'telegram/telegram.dart';
 
 final databaseProvider = Provider<LocalDatabase>((ref) {
@@ -14,8 +15,14 @@ final databaseProvider = Provider<LocalDatabase>((ref) {
   ref.onDispose(db.close);
   return db;
 });
-final apiProvider = Provider<ApiClient>((ref) {
+final Provider<ApiClient> apiProvider = Provider((ref) {
   final api = ApiClient();
+  api.language = ref.read(localeProvider).languageCode;
+  ref.listen(localeProvider, (_, locale) {
+    api.language = locale.languageCode;
+    ref.invalidate(resourceProvider);
+    ref.invalidate(categoriesProvider);
+  });
   api.onUnauthorized = () =>
       unawaited(ref.read(sessionProvider.notifier).logout());
   return api;
@@ -44,7 +51,9 @@ class SessionController extends AsyncNotifier<Person?> {
   Future<Person?> build() async {
     final initData = telegramInitData();
     if (initData == null || initData.isEmpty) return null;
-    return ref.read(authRepositoryProvider).signIn(initData: initData);
+    return _withLanguage(
+      await ref.read(authRepositoryProvider).signIn(initData: initData),
+    );
   }
 
   Future<void> demo(int id) async {
@@ -54,12 +63,31 @@ class SessionController extends AsyncNotifier<Person?> {
       ref.read(apiProvider).token = null;
       await db.wipePersonal();
       ref.invalidate(resourceProvider);
-      return ref.read(authRepositoryProvider).signIn(demoId: id);
+      return _withLanguage(
+        await ref.read(authRepositoryProvider).signIn(demoId: id),
+      );
     });
   }
 
+  Future<Person> _withLanguage(Person user) async {
+    await ref
+        .read(localeProvider.notifier)
+        .adoptAccountLanguage(user.json['language'] as String?);
+    final language = ref.read(localeProvider).languageCode;
+    return user.json['language'] == language
+        ? user
+        : ref.read(authRepositoryProvider).update({'language': language});
+  }
+
   Future<void> updateProfile(Json data) async {
+    final epoch = ref.read(apiProvider).identityEpoch;
+    final userId = state.value?.id;
     final user = await ref.read(authRepositoryProvider).update(data);
+    if (!ref.mounted ||
+        ref.read(apiProvider).identityEpoch != epoch ||
+        state.value?.id != userId) {
+      return;
+    }
     state = AsyncData(user);
     ref.invalidate(resourceProvider);
   }

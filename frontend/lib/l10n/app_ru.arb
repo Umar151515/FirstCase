@@ -1,0 +1,751 @@
+{
+  "@@locale": "ru",
+  "pageNotFound": "Страница не найдена",
+  "appTitle": "FirstCase — работа, которая становится опытом",
+  "navHome": "Главная",
+  "navTasks": "Найти заказ",
+  "navCreate": "Создать задачу",
+  "navOrders": "Мои заказы",
+  "navProfile": "Профиль",
+  "navTheme": "Переключить тему",
+  "navNotifications": "Уведомления",
+  "createOrder": "Создать заказ",
+  "signIn": "Войти",
+  "demoTryRoles": "Попробуйте FirstCase в любой роли",
+  "demoSignInAs": "Войти как…",
+  "errorSessionExpired": "Сессия завершилась. Войдите заново.",
+  "errorForbidden": "У вас нет доступа к этому действию.",
+  "errorNotFound": "Объект не найден или недоступен.",
+  "errorConflict": "Состояние изменилось. Обновите страницу.",
+  "errorValidation": "Проверьте введённые данные.",
+  "errorServer": "Сервер временно недоступен. Попробуйте ещё раз.",
+  "errorNetwork": "Не удалось подключиться к серверу. Проверьте интернет.",
+  "adminRestricted": "Доступ ограничен",
+  "adminRestrictedHint": "Этот раздел доступен администраторам платформы.",
+  "adminSection": "Администрирование",
+  "adminOverview": "Обзор",
+  "adminUsers": "Пользователи",
+  "adminTasks": "Задачи",
+  "adminOrders": "Заказы",
+  "adminReports": "Жалобы",
+  "adminAudit": "Журнал действий",
+  "statUsers": "Пользователей",
+  "statActiveTasks": "Активных задач",
+  "statCompletedOrders": "Завершённых заказов",
+  "statApplications": "Откликов",
+  "statReviews": "Отзывов",
+  "statVerifiedCases": "Подтверждённых кейсов",
+  "statOpenReports": "Открытых жалоб",
+  "adminSearchUsers": "Поиск пользователей",
+  "search": "Найти",
+  "filter": "Фильтр",
+  "all": "Все",
+  "filterActive": "Активные",
+  "filterBlocked": "Заблокированные",
+  "filterNew": "Новые",
+  "statusInReview": "На рассмотрении",
+  "filterResolved": "Решённые",
+  "filterRejected": "Отклонённые",
+  "filterOpen": "Открытые",
+  "statusInProgress": "В работе",
+  "filterCompleted": "Завершённые",
+  "filterCancelled": "Отменённые",
+  "filterAssigned": "Назначенные",
+  "statusSubmitted": "На проверке",
+  "filterDisputed": "Споры",
+  "emptyTitle": "Здесь пока пусто",
+  "emptyFilterHint": "Попробуйте изменить фильтр.",
+  "back": "Назад",
+  "next": "Дальше",
+  "userBlocked": "Заблокирован",
+  "userActive": "Активен",
+  "adminUnblockUser": "Разблокировать пользователя",
+  "adminBlockUser": "Заблокировать пользователя",
+  "unblock": "Разблокировать",
+  "block": "Заблокировать",
+  "hidden": "Скрыта",
+  "openTask": "Открыть задачу",
+  "adminRestoreTask": "Вернуть публикацию",
+  "adminHideTask": "Скрыть публикацию",
+  "restore": "Вернуть",
+  "hide": "Скрыть",
+  "adminChatPrivacy": "Доступ к переписке открывается только через разбор конкретной жалобы и фиксируется в журнале.",
+  "orderHistory": "История заказа",
+  "eventHistory": "История событий",
+  "adminResumeDisputed": "Возобновить заказ после спора",
+  "resumeWork": "Возобновить работу",
+  "adminCancelDisputed": "Отменить спорный заказ",
+  "cancelOrder": "Отменить заказ",
+  "adminProcessReport": "Обработать жалобу",
+  "adminInspectEvidence": "Изучить доказательства",
+  "adminActionAuditHint": "Действие и его основание будут сохранены в журнале модерации.",
+  "reasonBasis": "Основание",
+  "confirmAction": "Подтвердить действие",
+  "actionCompleted": "Действие выполнено",
+  "status": "Статус",
+  "statusResolved": "Решена",
+  "statusRejectedReport": "Отклонена",
+  "moderatorComment": "Комментарий модератора",
+  "saveDecision": "Сохранить решение",
+  "evidenceAccess": "Доступ к доказательствам",
+  "evidenceAccessHint": "Укажите основание доступа к приватным данным. Просмотр и скачивание файлов попадут в аудит.",
+  "evidenceAccessReason": "Зачем нужен доступ?",
+  "openMaterials": "Открыть материалы",
+  "loginTelegram": "Откройте FirstCase в Telegram",
+  "loginTelegramHint": "Вход выполняется автоматически через защищённые данные Telegram Mini App.",
+  "serverUnavailable": "Сервер недоступен",
+  "retry": "Повторить",
+  "loginFailed": "Не удалось войти",
+  "retryLogin": "Повторить вход",
+  "browseWithoutLogin": "Посмотреть заказы без входа",
+  "demoAccountsHint": "Каждая роль — настоящий аккаунт. Изменения сохраняются на сервере.",
+  "demoAccountsFailed": "Не удалось получить аккаунты",
+  "roleAdmin": "Администратор",
+  "roleCustomer": "Заказчик",
+  "loginRequiredHint": "Войдите, чтобы создавать заказы, общаться и собирать портфолио.",
+  "loginFirstCase": "Войти в FirstCase",
+  "chatTitle": "Рабочий чат",
+  "chatPrivate": "Личный",
+  "chatPrivacyHint": "Видят только участники заказа. Обновляется каждые 5 секунд.",
+  "chatNewMessages": "К новым сообщениям ↓",
+  "chatEmpty": "Начните разговор",
+  "chatEmptyHint": "Уточните детали и договоритесь о первом шаге.",
+  "earlier": "Раньше",
+  "later": "Позже",
+  "chatUnavailable": "Чат недоступен",
+  "chatMessageHint": "Напишите сообщение…",
+  "send": "Отправить",
+  "chatMessageRequired": "Напишите сообщение или прикрепите файл",
+  "notificationsEmptyHint": "Здесь появятся новости ваших заказов.",
+  "newBadge": "Новое",
+  "open": "Открыть",
+  "reportsTitle": "Мои обращения",
+  "reportsIntro": "Следите за рассмотрением жалоб и решениями модерации.",
+  "reportsEmpty": "Нет обращений",
+  "reportsEmptyHint": "Сообщить о нарушении можно со страницы задачи, заказа, профиля или кейса.",
+  "section": "Раздел",
+  "ordersActiveAndCompleted": "В работе и завершённые",
+  "myPublications": "Мои публикации",
+  "myApplications": "Мои отклики",
+  "myRole": "Моя роль",
+  "rolePerformer": "Исполнитель",
+  "filterAwaitingReview": "Ждут отзыв",
+  "ordersEmptyHint": "Выберите исполнителя или откликнитесь на задачу.",
+  "iAmCustomer": "Я заказчик",
+  "iAmPerformer": "Я исполнитель",
+  "publicationsEmpty": "Пока нет опубликованных задач",
+  "applicationsEmpty": "Вы ещё не откликались",
+  "applicationsEmptyHint": "Найдите задачу по душе и расскажите о себе.",
+  "submitIntro": "Расскажите о результате и приложите материалы для проверки.",
+  "workDescription": "Что сделано",
+  "resultLinks": "Ссылки на результат · по одной на строку",
+  "httpsLinksOnly": "Разрешены только HTTPS-ссылки",
+  "submitForReview": "Сдать работу на проверку",
+  "resultSubmitted": "Результат отправлен заказчику",
+  "revisionTitle": "Что нужно поправить?",
+  "revisionIntro": "Опишите изменения подробно и в пределах согласованного задания.",
+  "revisionList": "Список правок",
+  "requestRevision": "Запросить правки",
+  "reviewTitle": "Как всё прошло?",
+  "reviewCustomerHint": "Ваш отзыв завершит заказ и станет частью реальной репутации исполнителя.",
+  "reviewPerformerHint": "Поблагодарите заказчика за совместную работу. Это необязательно.",
+  "yourReview": "Ваш отзыв",
+  "publishReview": "Опубликовать отзыв",
+  "reviewPublished": "Спасибо! Отзыв опубликован.",
+  "publicationPermissions": "Разрешения на публикацию",
+  "publicationPermissionsHint": "Приватность бесплатна. Разрешите только конкретные материалы. Отправка пустого списка отзовёт все разрешения.",
+  "allowIdentity": "Разрешить раскрытие моей личности",
+  "messageExcerpts": "Фрагменты переписки",
+  "attachments": "Вложения",
+  "savePermissions": "Сохранить разрешения",
+  "permissionsUpdated": "Разрешения обновлены",
+  "taskFiles": "Файлы задания",
+  "startWork": "Начать работу",
+  "submitWork": "Сдать работу",
+  "acceptWork": "Принять работу",
+  "acceptWorkTitle": "Принять результат?",
+  "acceptWorkHint": "После принятия нужно оставить отзыв. Именно он успешно завершит заказ.",
+  "mandatoryReview": "Оставить обязательный отзыв",
+  "addToPortfolio": "Добавить в портфолио",
+  "reviewCustomer": "Оценить заказчика",
+  "cancelOrderTitle": "Отменить заказ?",
+  "cancelOrderHint": "Обсудите это решение со вторым участником. Отмена сохранится в истории.",
+  "openDispute": "Открыть спор",
+  "openDisputeTitle": "Открыть спор?",
+  "openDisputeHint": "Исполнение приостановится. Опишите ситуацию команде модерации в жалобе.",
+  "report": "Пожаловаться",
+  "orderNeedsCustomerReview": "Остался один важный шаг: оставьте отзыв. Он завершит заказ и подтвердит опыт исполнителя.",
+  "orderWaitingCustomerReview": "Работа принята! Ждём отзыв заказчика, после чего вы сможете создать подтверждённый кейс.",
+  "workResults": "Результаты работы",
+  "openResult": "Открыть результат ↗",
+  "collaborationReviews": "Отзывы о сотрудничестве",
+  "configurePermissions": "Настроить разрешения на публикацию",
+  "tipsIntro": "Чаевые — только по вашему желанию. Заказ и приватность не зависят от перевода.",
+  "tipsNoQr": "Исполнитель ещё не добавил QR",
+  "tipsReviewAlternative": "Тёплый отзыв тоже очень ценен.",
+  "viewQr": "Посмотреть QR-код",
+  "openPaymentLink": "Открыть платёжную ссылку ↗",
+  "externalPaymentHint": "Перевод выполняется во внешнем приложении. FirstCase не принимает деньги, не берёт комиссию и не подтверждает получение перевода.",
+  "verifiedCase": "Подтверждённый кейс",
+  "personalWork": "Личная работа",
+  "verifiedByOrder": "Подтверждено реальным заказом",
+  "projectStory": "История проекта",
+  "result": "Результат",
+  "customerIdentityProtected": "Личность заказчика защищена",
+  "permittedMaterials": "Разрешённые материалы",
+  "authorProfile": "Профиль автора",
+  "privacySettings": "Настройки приватности",
+  "addPersonalWork": "Добавить свою работу",
+  "personalWorkHint": "Личная работа будет отмечена как неподтверждённая.",
+  "verifiedCaseHint": "Кейс будет связан с завершённым заказом и подтверждённым опытом.",
+  "caseTitle": "Название кейса",
+  "caseApproach": "Задача и ваш подход",
+  "caseResult": "Что получилось",
+  "caseAudience": "Кто увидит кейс",
+  "onlyMe": "Только я",
+  "publicAnonymousCustomer": "Публично, анонимный заказчик",
+  "publicCase": "Публичный кейс",
+  "anonymousCaseHint": "Для анонимного кейса используйте безопасное описание без имён и личных данных. Исходные файлы и переписка автоматически не публикуются.",
+  "revealCustomer": "Раскрыть личность заказчика",
+  "requestPublicationConsent": "Запросить публикацию с согласия",
+  "selectMaterials": "Выберите конкретные материалы",
+  "materialsConsentHint": "Сервер опубликует их только при действующем согласии заказчика. Согласие на личность и материалы задаётся в пространстве заказа.",
+  "createCase": "Создать кейс",
+  "casePrivacy": "Приватность вашего кейса",
+  "casePrivacyHint": "Вы управляете видимостью. Переход в публичный режим сохраняет личность заказчика скрытой.",
+  "visibility": "Видимость",
+  "visibilityPrivate": "Только мне",
+  "visibilityAnonymous": "Анонимно",
+  "visibilityPublic": "Публично",
+  "updateVisibility": "Обновить видимость",
+  "visibilityUpdated": "Видимость обновлена",
+  "profileName": "Как к вам обращаться?",
+  "specialization": "Специализация",
+  "specializationHint": "Flutter-разработчик, дизайнер, видеомонтажёр…",
+  "skillsLabel": "Навыки · через запятую",
+  "skillsHint": "Dart, Figma, монтаж, иллюстрация",
+  "bio": "О себе",
+  "bioHint": "Что любите делать и чему хотите научиться?",
+  "city": "Город",
+  "workLinks": "Ссылки на работы · по одной на строку",
+  "useHttpsLinks": "Используйте HTTPS-ссылки",
+  "saveProfile": "Сохранить профиль",
+  "fillLater": "Заполню позже",
+  "tipsSettingsTitle": "Маленькое «спасибо»",
+  "tipsSettingsIntro": "Добавьте QR, чтобы заказчик мог добровольно поблагодарить вас.",
+  "paymentMethod": "Название платёжного метода",
+  "paymentMethodHint": "Например, MBank",
+  "optionalPaymentLink": "Безопасная платёжная ссылка · необязательно",
+  "httpsLinkOnly": "Разрешена только HTTPS-ссылка",
+  "acceptTips": "Принимать добровольные чаевые",
+  "enabled": "Включено",
+  "disabled": "Выключено",
+  "publishQr": "Публиковать QR в профиле",
+  "yesAllow": "Да, разрешаю",
+  "completedCustomersOnly": "Только заказчикам завершённых заказов",
+  "qrPrivacyHint": "QR может раскрывать ваше имя или платёжные данные. Включайте публичный показ осознанно. FirstCase не принимает платежи и не подтверждает переводы.",
+  "saveSettings": "Сохранить настройки",
+  "tipsSettingsSaved": "Настройки чаевых сохранены",
+  "qrOrLinkRequired": "Добавьте QR или платёжную ссылку",
+  "openToOpportunities": "Открыт к новым возможностям",
+  "edit": "Редактировать",
+  "rating": "Рейтинг",
+  "completedOrders": "Завершено заказов",
+  "configureProfile": "Настроить профиль",
+  "tipsQr": "QR для чаевых",
+  "myReports": "Мои жалобы",
+  "signOut": "Выйти",
+  "myPortfolio": "Моё портфолио",
+  "portfolio": "Портфолио",
+  "addWork": "Добавить работу",
+  "taskSearchHint": "Название, навык или ключевое слово",
+  "category": "Направление",
+  "allCategories": "Все направления",
+  "publicationDate": "Дата публикации",
+  "allTime": "За всё время",
+  "today": "Сегодня",
+  "lastWeek": "За неделю",
+  "lastMonth": "За месяц",
+  "sort": "Сортировка",
+  "newestFirst": "Сначала новые",
+  "oldestFirst": "Сначала старые",
+  "deadlineSoonest": "Ближайший срок",
+  "citySearchHint": "Город · например, Бишкек",
+  "tasksEmpty": "Пока ничего не нашлось",
+  "tasksEmptyHint": "Попробуйте другое слово или выберите все направления.",
+  "taskDescription": "Что нужно сделать",
+  "taskExpectedResult": "Какой результат ожидается",
+  "voluntaryTips": "Добровольные чаевые",
+  "freeForExperience": "Бесплатно · за опыт",
+  "applyForTask": "Откликнуться на задачу",
+  "cancelTask": "Отменить задачу",
+  "cancelTaskTitle": "Отменить задачу?",
+  "cancelTaskHint": "Она больше не будет доступна для откликов.",
+  "performerApplications": "Отклики исполнителей",
+  "myApplication": "Мой отклик",
+  "applicationsComingHint": "Исполнители увидят вашу задачу в каталоге.",
+  "joinStoryHint": "Расскажите, почему хотите взяться за задачу.",
+  "profileAndPortfolio": "Профиль и портфолио",
+  "choosePerformer": "Выбрать исполнителя",
+  "choosePerformerTitle": "Начать работу вместе?",
+  "choosePerformerHint": "После выбора исполнителя откроется заказ с личным чатом.",
+  "reject": "Отклонить",
+  "withdrawApplication": "Отозвать отклик",
+  "applicationIntro": "Расскажите, чем задача вам интересна и как вы её решите.",
+  "applicationWhyYou": "Почему вы подходите?",
+  "applicationDays": "За сколько дней справитесь?",
+  "daysValidation": "Укажите от 1 до 365 дней",
+  "additionalComment": "Дополнительный комментарий",
+  "sendApplication": "Отправить отклик",
+  "applicationSent": "Отклик отправлен заказчику",
+  "taskLoadFailed": "Не удалось открыть задачу",
+  "taskEditTitle": "Редактировать задачу",
+  "taskSectionAbout": "01 · О ЗАДАЧЕ",
+  "taskTitle": "Название задачи",
+  "taskTitleHint": "Например, сделать Telegram-бота для кофейни",
+  "taskDetailedDescription": "Подробное описание",
+  "taskDescriptionHint": "Что нужно сделать, для кого и что уже есть?",
+  "expectedResult": "Ожидаемый результат",
+  "expectedResultHint": "Какие файлы, ссылки или материалы вы хотите получить?",
+  "taskSectionTerms": "02 · УСЛОВИЯ",
+  "deadlineDays": "Срок выполнения в днях",
+  "agreedRevisions": "Количество согласованных правок",
+  "noRevisions": "Без правок",
+  "oneRevision": "1 правка",
+  "twoRevisions": "2 правки",
+  "threeRevisions": "3 правки",
+  "workGratitude": "Благодарность за работу",
+  "noInAppPayments": "Платежей внутри FirstCase нет. Чаевые добровольны и не влияют на завершение заказа или приватность.",
+  "publishTask": "Опубликовать задачу",
+  "saveChanges": "Сохранить изменения",
+  "chooseCategory": "Выберите направление",
+  "saveDraft": "Сохранить черновик",
+  "draftSaved": "Черновик сохранён на этом устройстве",
+  "statusPublished": "Открыт для откликов",
+  "statusAssigned": "Исполнитель выбран",
+  "statusRevisionRequested": "Нужны правки",
+  "statusAcceptedPendingReview": "Ожидает отзыв",
+  "statusCompleted": "Завершён",
+  "statusCancelled": "Отменён",
+  "statusDisputed": "Открыт спор",
+  "statusPending": "Ожидает решения",
+  "statusAccepted": "Принят",
+  "statusRejected": "Отклонён",
+  "statusWithdrawn": "Отозван",
+  "eventCreated": "Заказ создан",
+  "eventStart": "Исполнитель приступил к работе",
+  "eventAccept": "Заказчик принял результат",
+  "eventRequestRevision": "Заказчик запросил правки",
+  "eventCancel": "Заказ отменён",
+  "eventCustomerReview": "Заказчик оставил отзыв",
+  "eventPerformerReview": "Исполнитель оставил отзыв",
+  "eventDisputeResolved": "Спор рассмотрен модератором",
+  "pleaseWait": "Подождите…",
+  "offlineData": "Нет сети · показаны сохранённые данные",
+  "loadFailed": "Не получилось загрузить",
+  "tryAgain": "Попробовать снова",
+  "confirm": "Подтвердить",
+  "reportTitle": "Сообщить о нарушении",
+  "reportIntro": "Жалобу рассмотрит команда FirstCase.",
+  "reason": "Причина",
+  "reasonSpam": "Спам",
+  "reasonFraud": "Мошенничество",
+  "reasonAbuse": "Оскорбления",
+  "reasonProhibited": "Запрещённый контент",
+  "reasonAgreement": "Нарушение договорённостей",
+  "reasonRating": "Накрутка",
+  "reportWhatHappened": "Что произошло?",
+  "sendReport": "Отправить жалобу",
+  "reportSent": "Жалоба отправлена",
+  "brandLoading": "Загружаем FirstCase",
+  "brandDescription": "Первый опыт. Настоящая работа.",
+  "homeKicker": "Платформа первого опыта · Кыргызстан",
+  "homeTitle": "Начните с настоящей задачи",
+  "homeIntro": "Найдите небольшую работу, договоритесь об условиях и сохраните результат в портфолио.",
+  "homeSearchHint": "Задача, навык или направление",
+  "homeSearch": "Найти задачу",
+  "homeCreate": "Разместить задачу",
+  "homeRecent": "Новые задачи",
+  "homeSeeAll": "Все задачи",
+  "homeCategories": "Направления",
+  "homePeople": "Исполнители",
+  "homeApproach": "Как здесь работают",
+  "homeStepFind": "Выберите задачу",
+  "homeStepWork": "Договоритесь и выполните работу",
+  "homeStepKeep": "Получите отзыв и сохраните кейс",
+  "homeAiTitle": "Условия работы с ИИ",
+  "homeAiBody": "Заказчик заранее выбирает правила: без ИИ, ИИ как консультант или использование ИИ в работе. Исполнитель указывает, как выполнен результат.",
+  "homeFooter": "FirstCase · Кыргызстан",
+  "navLanguage": "Язык",
+  "languageRussian": "Русский",
+  "languageKyrgyz": "Кыргызча",
+  "mediaChoosePhoto": "Добавить фото",
+  "mediaChangePhoto": "Изменить фото",
+  "mediaRemovePhoto": "Удалить фото",
+  "mediaImageUnavailable": "Изображение недоступно",
+  "mediaPreview": "Просмотр изображения",
+  "mediaUploadHint": "JPG, PNG или WebP · до 10 МБ",
+  "mediaFilesHint": "JPG, PNG, WebP, PDF, TXT, ZIP · до 10 МБ",
+  "mediaDownload": "Скачать",
+  "mediaRemoveFile": "Убрать файл",
+  "mediaFileTooLarge": "Размер файла не должен превышать 10 МБ",
+  "aiPolicyLabel": "Использование ИИ",
+  "aiPolicyHint": "Выберите, какую роль ИИ может играть в работе.",
+  "aiPolicyNoAi": "Без ИИ",
+  "aiPolicyConsultation": "ИИ как консультант",
+  "aiPolicyAllowed": "Можно использовать ИИ",
+  "aiPolicyAny": "Любое использование ИИ",
+  "aiUsageLabel": "Как использован ИИ",
+  "aiUsageNoAi": "ИИ не использовался",
+  "aiUsageConsultation": "ИИ использован для консультации",
+  "aiUsageAssisted": "Работа выполнена с помощью ИИ",
+  "aiDisclosureLabel": "Какие инструменты ИИ вы использовали?",
+  "aiDisclosureHint": "Укажите инструменты и опишите, какую часть работы они помогли выполнить.",
+  "aiDisclosureRequired": "Расскажите, как использовался ИИ",
+  "aiPolicyTerms": "Соблюдайте согласованные с заказчиком условия использования ИИ.",
+  "coverPhotoLabel": "Обложка",
+  "profilePhotoLabel": "Фото профиля",
+  "caseCoverConsentHint": "Для обложки из заказа нужно разрешение заказчика на публикацию файла.",
+  "caseCoverAnonymousHint": "Обложка недоступна для анонимного кейса, чтобы не раскрыть личные данные.",
+  "categoryProgramming": "Разработка",
+  "categoryDesign": "Дизайн",
+  "categoryVideo": "Видео и монтаж",
+  "categoryWriting": "Тексты и SMM",
+  "categoryMarketing": "Маркетинг",
+  "categoryIllustration": "Иллюстрация",
+  "categoryOther": "Другое",
+  "remote": "Удалённо",
+  "attachImage": "Прикрепить изображение",
+  "attachFiles": "Прикрепить файлы",
+  "actionDefault": "Действие",
+  "appName": "FirstCase",
+  "commonClose": "Закрыть",
+  "tipsQrImageLabel": "QR-код для чаевых",
+  "homeEmpty": "Пока нет открытых задач",
+  "homePeopleEmpty": "Здесь появятся исполнители",
+  "homeNewcomer": "Новый участник",
+  "homeOpenToWork": "Открыт к задачам",
+  "homeCategoriesUnavailable": "Направления недоступны",
+  "demoLabel": "Демо",
+  "taskNewTitle": "Новая задача",
+  "taskFormSubtitle": "Опишите результат и условия работы.",
+  "taskApplicationsEmpty": "Откликов пока нет",
+  "taskNotApplied": "Вы ещё не откликнулись",
+  "applicationDialogTitle": "Отклик на задачу",
+  "paymentTips": "Чаевые",
+  "paymentExperience": "За опыт",
+  "tasksSubtitle": "Найдите работу по своим навыкам и условиям.",
+  "adminSubtitle": "Пользователи, публикации и обращения.",
+  "thankShort": "Поблагодарить",
+  "portfolioSubtitle": "Завершённые проекты и личные работы.",
+  "portfolioNoWorks": "Работ пока нет",
+  "portfolioNoWorksHint": "Добавьте личную работу или результат завершённого заказа.",
+  "profileOnboardingTitle": "Знакомство",
+  "profileEditTitle": "Редактировать профиль",
+  "profileFormSubtitle": "Добавьте фото, навыки и несколько слов о себе.",
+  "notificationsSubtitle": "Отклики, сообщения и изменения заказов.",
+  "notificationsNoNew": "Новых уведомлений нет",
+  "caseFromOrder": "Кейс из завершённого заказа",
+  "loginSubtitle": "Небольшие задачи, совместная работа и портфолио.",
+  "signInRequired": "Войдите в аккаунт",
+  "orderSubtitle": "Условия, результаты и переписка по заказу.",
+  "thankPerformerShort": "Поблагодарить исполнителя",
+  "performerGratitude": "Благодарность исполнителю",
+  "workResult": "Результат работы",
+  "ordersSubtitle": "Текущая работа, публикации и отклики.",
+  "ordersNoOrders": "Заказов пока нет",
+  "mediaFileLabel": "Файл #{id}",
+  "@mediaFileLabel": {
+    "placeholders": {
+      "id": {
+        "type": "int"
+      }
+    }
+  },
+  "signedInAs": "Вы вошли как {name}",
+  "@signedInAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "signedInAsAdmin": "Вы вошли как {name} · администратор",
+  "@signedInAsAdmin": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderParticipants": "Заказчик: {customer}\nИсполнитель: {performer}",
+  "@orderParticipants": {
+    "placeholders": {
+      "customer": {
+        "type": "String"
+      },
+      "performer": {
+        "type": "String"
+      }
+    }
+  },
+  "adminReportLabel": "Жалоба #{id} · {target} #{targetId}",
+  "@adminReportLabel": {
+    "placeholders": {
+      "id": {
+        "type": "int"
+      },
+      "target": {
+        "type": "String"
+      },
+      "targetId": {
+        "type": "int"
+      }
+    }
+  },
+  "decisionLabel": "Решение: {comment}",
+  "@decisionLabel": {
+    "placeholders": {
+      "comment": {
+        "type": "String"
+      }
+    }
+  },
+  "adminReportDecisionTitle": "Решение по жалобе #{id}",
+  "@adminReportDecisionTitle": {
+    "placeholders": {
+      "id": {
+        "type": "int"
+      }
+    }
+  },
+  "reportLabel": "Обращение #{id}",
+  "@reportLabel": {
+    "placeholders": {
+      "id": {
+        "type": "int"
+      }
+    }
+  },
+  "moderatorDecisionLabel": "Решение модератора: {comment}",
+  "@moderatorDecisionLabel": {
+    "placeholders": {
+      "comment": {
+        "type": "String"
+      }
+    }
+  },
+  "orderDateLabel": "Заказ #{id} · {date}",
+  "@orderDateLabel": {
+    "placeholders": {
+      "id": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "applicationTaskLabel": "Отклик на задачу #{id}",
+  "@applicationTaskLabel": {
+    "placeholders": {
+      "id": {
+        "type": "int"
+      }
+    }
+  },
+  "orderNumber": "ЗАКАЗ #{id}",
+  "@orderNumber": {
+    "placeholders": {
+      "id": {
+        "type": "int"
+      }
+    }
+  },
+  "dueBy": "До {date}",
+  "@dueBy": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "revisionsUsed": "Правки: {used} из {total}",
+  "@revisionsUsed": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "resultLabel": "Результат: {result}",
+  "@resultLabel": {
+    "placeholders": {
+      "result": {
+        "type": "String"
+      }
+    }
+  },
+  "resultVersion": "ВЕРСИЯ {version} · {date}",
+  "@resultVersion": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewByCustomer": "Отзыв от заказчика · {date}",
+  "@reviewByCustomer": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewByPerformer": "Отзыв от исполнителя · {date}",
+  "@reviewByPerformer": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "completedOn": "Завершено {date}",
+  "@completedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "customerLabel": "Заказчик: {name}",
+  "@customerLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksFound": "{count, plural, one{Найдена {count} задача} few{Найдено {count} задачи} many{Найдено {count} задач} other{Найдено {count} задачи}}",
+  "@tasksFound": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "applicationCount": "{count, plural, one{{count} отклик} few{{count} отклика} many{{count} откликов} other{{count} отклика}}",
+  "@applicationCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "publishedAt": "Опубликовано {date} · {city}",
+  "@publishedAt": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "city": {
+        "type": "String"
+      }
+    }
+  },
+  "deadlineLabel": "Срок: {date}",
+  "@deadlineLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "revisionCount": "{count, plural, one{{count} правка} few{{count} правки} many{{count} правок} other{{count} правки}}",
+  "@revisionCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "proposedDeadlineLabel": "Предлагаемый срок: {date}",
+  "@proposedDeadlineLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "minCharacters": "{count, plural, one{Введите минимум {count} символ} few{Введите минимум {count} символа} many{Введите минимум {count} символов} other{Введите минимум {count} символа}}",
+  "@minCharacters": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "categoryData": "Данные и автоматизация",
+  "languageKyrgyzShort": "KY",
+  "languageRussianShort": "RU",
+  "languageSyncFailed": "Язык на устройстве изменён. Не удалось сохранить язык для уведомлений: {error}",
+  "@languageSyncFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "navTasksShort": "Задачи",
+  "navCreateShort": "Создать",
+  "navOrdersShort": "Заказы",
+  "demoSwitchRole": "Выбор роли",
+  "contentUser": "Пользователь",
+  "contentTask": "Задача",
+  "contentOrder": "Заказ",
+  "contentMessage": "Сообщение",
+  "contentReview": "Отзыв",
+  "contentPortfolio": "Кейс",
+  "contentReport": "Жалоба",
+  "contentOther": "Материал",
+  "auditUnblocked": "Пользователь разблокирован",
+  "auditHidden": "Публикация скрыта",
+  "auditRestored": "Публикация восстановлена",
+  "auditEvidenceAccess": "Просмотр материалов жалобы",
+  "auditAttachmentAccess": "Скачивание материала жалобы",
+  "auditDisputeCancelled": "Спор закрыт с отменой заказа",
+  "auditDisputeResumed": "Работа возобновлена после спора",
+  "auditReportStatus": "Статус жалобы: {status}",
+  "@auditReportStatus": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "auditTarget": "{target} №{id}",
+  "@auditTarget": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      },
+      "id": {
+        "type": "int"
+      }
+    }
+  },
+  "auditModerator": "Модератор №{id}",
+  "@auditModerator": {
+    "placeholders": {
+      "id": {
+        "type": "int"
+      }
+    }
+  }
+}

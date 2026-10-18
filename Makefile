@@ -34,6 +34,7 @@ test-frontend:
 lint:
 	uv run ruff check backend shared bot scripts
 	uv run ruff format --check backend shared bot scripts
+	uv run python scripts/check_localization.py
 	cd frontend && flutter analyze
 
 stop:
