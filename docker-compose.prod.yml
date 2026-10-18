@@ -1,0 +1,84 @@
+name: firstcase-production
+
+x-production-env: &production-env
+  APP_MODE: production
+  DEBUG: "false"
+  DATABASE_URL: ${DATABASE_URL:?Set production DATABASE_URL with the postgres service hostname}
+  JWT_SECRET: ${JWT_SECRET:?Set a strong unique production JWT_SECRET}
+  TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?Set TELEGRAM_BOT_TOKEN}
+  TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:?Set TELEGRAM_BOT_USERNAME}
+  ADMIN_TELEGRAM_IDS: ${ADMIN_TELEGRAM_IDS:-}
+  PUBLIC_WEBAPP_URL: ${PUBLIC_WEBAPP_URL:?Set an HTTPS PUBLIC_WEBAPP_URL}
+  API_PUBLIC_URL: ${API_PUBLIC_URL:?Set an HTTPS API_PUBLIC_URL}
+  CORS_ORIGINS: ${CORS_ORIGINS:?Set production CORS_ORIGINS comma separated origins}
+  UPLOAD_DIR: /data/uploads
+  MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-10}
+
+services:
+  postgres:
+    image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
+    environment:
+      POSTGRES_USER: firstcase
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a strong production POSTGRES_PASSWORD}
+      POSTGRES_DB: firstcase_production
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U firstcase -d firstcase_production"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: runtime
+    environment: *production-env
+    command: ["python", "-m", "scripts.run_backend"]
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      start_period: 40s
+      retries: 10
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        API_BASE_URL: /api/v1
+        APP_MODE: production
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1/"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  bot:
+    build:
+      context: .
+      dockerfile: bot/Dockerfile
+    environment: *production-env
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  uploads:
