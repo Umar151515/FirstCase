@@ -1,16 +1,23 @@
 from html import escape
 
 from aiogram import Router
-from aiogram.filters import Command, CommandStart
-from aiogram.types import Message
+from aiogram.filters import Command, CommandStart, ExceptionTypeFilter
+from aiogram.types import ErrorEvent, Message
 
 from bot.keyboards.webapp import open_app
 from shared.core.config import Settings
+from shared.core.exceptions import DomainError
 from shared.features.auth.services import AuthService
 from shared.features.tasks.services import TaskService
 from shared.features.users.services import UserService
 
 router = Router(name="firstcase-commands")
+
+
+@router.error(ExceptionTypeFilter(DomainError))
+async def domain_error(event: ErrorEvent) -> None:
+    if event.update.message:
+        await event.update.message.answer(event.exception.message, parse_mode=None)
 
 
 @router.message(CommandStart())

@@ -6,6 +6,10 @@ x-app-env: &app-env
   DATABASE_URL: postgresql+asyncpg://firstcase:${POSTGRES_PASSWORD:-firstcase_demo_local}@postgres:5432/firstcase_demo
   TEST_DATABASE_URL: postgresql+asyncpg://firstcase_test:${TEST_POSTGRES_PASSWORD:-firstcase_test_local}@test-postgres:5432/firstcase_test
   JWT_SECRET: ${JWT_SECRET:-firstcase-local-demo-secret-change-in-production-4d924ef7}
+  JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-120}
+  TELEGRAM_AUTH_MAX_AGE: ${TELEGRAM_AUTH_MAX_AGE:-3600}
+  AUTH_RATE_LIMIT: ${AUTH_RATE_LIMIT:-30}
+  WRITE_RATE_LIMIT: ${WRITE_RATE_LIMIT:-120}
   TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
   TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-}
   ADMIN_TELEGRAM_IDS: ${ADMIN_TELEGRAM_IDS:-}

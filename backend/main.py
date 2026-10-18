@@ -71,6 +71,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_credentials=False,
         allow_methods=["GET", "POST", "PUT", "PATCH", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type"],
+        expose_headers=["Content-Disposition"],
     )
     app.add_middleware(BodyLimitMiddleware, maximum=(settings.max_upload_size_mb + 1) * 1024 * 1024)
     buckets: dict[tuple, deque] = defaultdict(deque)
