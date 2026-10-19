@@ -221,10 +221,12 @@ class _ImageUploadFieldState extends ConsumerState<ImageUploadField> {
                       child: FCircularProgress(),
                     )
                   : const Icon(FLucideIcons.imagePlus, size: 16),
-              child: Text(
-                widget.value == null && widget.previewUrl == null
-                    ? context.l10n.mediaChoosePhoto
-                    : context.l10n.mediaChangePhoto,
+              child: Flexible(
+                child: Text(
+                  widget.value == null && widget.previewUrl == null
+                      ? context.l10n.mediaChoosePhoto
+                      : context.l10n.mediaChangePhoto,
+                ),
               ),
             ),
             if ((widget.value != null || widget.previewUrl != null) &&
@@ -234,7 +236,7 @@ class _ImageUploadFieldState extends ConsumerState<ImageUploadField> {
                 variant: .ghost,
                 mainAxisSize: MainAxisSize.min,
                 onPress: busy ? null : () => widget.onChange(null),
-                child: Text(context.l10n.mediaRemovePhoto),
+                child: Flexible(child: Text(context.l10n.mediaRemovePhoto)),
               ),
           ],
         ),

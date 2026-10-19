@@ -74,7 +74,7 @@ class ProfilePage extends ConsumerWidget {
                               variant: .outline,
                               mainAxisSize: MainAxisSize.min,
                               onPress: () => context.go('/profile/edit'),
-                              child: Text(context.l10n.edit),
+                              child: Flexible(child: Text(context.l10n.edit)),
                             ),
                         ],
                       ),
@@ -127,7 +127,9 @@ class ProfilePage extends ConsumerWidget {
                                     Uri.parse(link),
                                     mode: LaunchMode.externalApplication,
                                   ),
-                                  child: Text(Uri.parse(link as String).host),
+                                  child: Flexible(
+                                    child: Text(Uri.parse(link as String).host),
+                                  ),
                                 ),
                               )
                               .toList(),
@@ -142,17 +144,21 @@ class ProfilePage extends ConsumerWidget {
                             FButton(
                               variant: .outline,
                               onPress: () => context.go('/profile/edit'),
-                              child: Text(context.l10n.configureProfile),
+                              child: Flexible(
+                                child: Text(context.l10n.configureProfile),
+                              ),
                             ),
                             FButton(
                               variant: .outline,
                               onPress: () => context.go('/tips'),
-                              child: Text(context.l10n.tipsQr),
+                              child: Flexible(child: Text(context.l10n.tipsQr)),
                             ),
                             FButton(
                               variant: .ghost,
                               onPress: () => context.go('/reports'),
-                              child: Text(context.l10n.myReports),
+                              child: Flexible(
+                                child: Text(context.l10n.myReports),
+                              ),
                             ),
                             if (person.admin)
                               FButton(
@@ -161,7 +167,9 @@ class ProfilePage extends ConsumerWidget {
                                   FLucideIcons.shieldCheck,
                                   size: 16,
                                 ),
-                                child: Text(context.l10n.adminSection),
+                                child: Flexible(
+                                  child: Text(context.l10n.adminSection),
+                                ),
                               ),
                             ActionButton(
                               context.l10n.signOut,
@@ -177,14 +185,18 @@ class ProfilePage extends ConsumerWidget {
                             FButton(
                               variant: .outline,
                               onPress: () => modal(context, TipsViewer(userId)),
-                              child: Text(context.l10n.thankShort),
+                              child: Flexible(
+                                child: Text(context.l10n.thankShort),
+                              ),
                             ),
                             if (session != null)
                               FButton(
                                 variant: .ghost,
                                 onPress: () =>
                                     modal(context, ReportForm('user', userId)),
-                                child: Text(context.l10n.report),
+                                child: Flexible(
+                                  child: Text(context.l10n.report),
+                                ),
                               ),
                           ],
                         ],
@@ -200,7 +212,7 @@ class ProfilePage extends ConsumerWidget {
                       ? FButton(
                           variant: .outline,
                           onPress: () => context.go('/portfolio/new'),
-                          child: Text(context.l10n.addWork),
+                          child: Flexible(child: Text(context.l10n.addWork)),
                         )
                       : null,
                 ),

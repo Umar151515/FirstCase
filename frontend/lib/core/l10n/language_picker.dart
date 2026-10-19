@@ -46,14 +46,16 @@ class _LanguagePickerState extends ConsumerState<LanguagePicker> {
                   if (mounted) setState(() => busy = false);
                 }
               },
-        child: Text(
-          widget.compact
-              ? (current == 'ru'
-                    ? context.l10n.languageKyrgyzShort
-                    : context.l10n.languageRussianShort)
-              : (current == 'ru'
-                    ? context.l10n.languageKyrgyz
-                    : context.l10n.languageRussian),
+        child: Flexible(
+          child: Text(
+            widget.compact
+                ? (current == 'ru'
+                      ? context.l10n.languageKyrgyzShort
+                      : context.l10n.languageRussianShort)
+                : (current == 'ru'
+                      ? context.l10n.languageKyrgyz
+                      : context.l10n.languageRussian),
+          ),
         ),
       ),
     );

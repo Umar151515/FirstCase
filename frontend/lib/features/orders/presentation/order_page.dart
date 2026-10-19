@@ -117,7 +117,9 @@ class OrderPage extends ConsumerWidget {
                                 context,
                                 SubmitForm(id, aiPolicy: aiPolicy),
                               ),
-                              child: Text(context.l10n.submitWork),
+                              child: Flexible(
+                                child: Text(context.l10n.submitWork),
+                              ),
                             ),
                           if (customer && status == 'submitted') ...[
                             ActionButton(
@@ -142,13 +144,17 @@ class OrderPage extends ConsumerWidget {
                               FButton(
                                 variant: .outline,
                                 onPress: () => modal(context, RevisionForm(id)),
-                                child: Text(context.l10n.requestRevision),
+                                child: Flexible(
+                                  child: Text(context.l10n.requestRevision),
+                                ),
                               ),
                           ],
                           if (customer && status == 'accepted_pending_review')
                             FButton(
                               onPress: () => modal(context, ReviewForm(id)),
-                              child: Text(context.l10n.mandatoryReview),
+                              child: Flexible(
+                                child: Text(context.l10n.mandatoryReview),
+                              ),
                             ),
                           if (performer && status == 'completed')
                             FButton(
@@ -158,7 +164,9 @@ class OrderPage extends ConsumerWidget {
                                 FLucideIcons.badgeCheck,
                                 size: 16,
                               ),
-                              child: Text(context.l10n.addToPortfolio),
+                              child: Flexible(
+                                child: Text(context.l10n.addToPortfolio),
+                              ),
                             ),
                           if (performer && status == 'completed')
                             FButton(
@@ -167,7 +175,9 @@ class OrderPage extends ConsumerWidget {
                                 context,
                                 ReviewForm(id, requiredComment: false),
                               ),
-                              child: Text(context.l10n.reviewCustomer),
+                              child: Flexible(
+                                child: Text(context.l10n.reviewCustomer),
+                              ),
                             ),
                           if (customer && status == 'completed')
                             FButton(
@@ -176,7 +186,9 @@ class OrderPage extends ConsumerWidget {
                                 context,
                                 TipsViewer(order['performer_id'] as int),
                               ),
-                              child: Text(context.l10n.thankPerformerShort),
+                              child: Flexible(
+                                child: Text(context.l10n.thankPerformerShort),
+                              ),
                             ),
                           if ([
                             'assigned',
@@ -222,7 +234,7 @@ class OrderPage extends ConsumerWidget {
                             variant: .ghost,
                             onPress: () =>
                                 modal(context, ReportForm('order', id)),
-                            child: Text(context.l10n.report),
+                            child: Flexible(child: Text(context.l10n.report)),
                           ),
                         ],
                       ),
@@ -327,7 +339,9 @@ class OrderPage extends ConsumerWidget {
                                           Uri.parse(link as String),
                                           mode: LaunchMode.externalApplication,
                                         ),
-                                        child: Text(context.l10n.openResult),
+                                        child: Flexible(
+                                          child: Text(context.l10n.openResult),
+                                        ),
                                       ),
                                   ],
                                 ),
@@ -339,7 +353,16 @@ class OrderPage extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                ChatPanel(id, key: ValueKey('chat:$id:${user.id}')),
+                ChatPanel(
+                  id,
+                  key: ValueKey('chat:$id:${user.id}'),
+                  peer: Person(
+                    Map<String, dynamic>.from(
+                      order[customer ? 'performer' : 'customer'] as Map,
+                    ),
+                  ),
+                  readOnly: status == 'cancelled',
+                ),
                 const SizedBox(height: 24),
                 ResourceView(
                   '/orders/$id/reviews',
@@ -556,7 +579,7 @@ class TipsViewer extends StatelessWidget {
                     Uri.parse(data['payment_url'] as String),
                     mode: LaunchMode.externalApplication,
                   ),
-                  child: Text(context.l10n.openPaymentLink),
+                  child: Flexible(child: Text(context.l10n.openPaymentLink)),
                 ),
               ],
               const SizedBox(height: 18),

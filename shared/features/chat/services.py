@@ -26,14 +26,30 @@ class ChatService:
             }
         )
 
-    async def history(self, order_id: int, actor_id: int, after_id=None, offset=0, limit=20):
+    async def history(
+        self,
+        order_id: int,
+        actor_id: int,
+        after_id=None,
+        offset=0,
+        limit=20,
+        *,
+        before_id=None,
+        latest=False,
+    ):
         await OrderService(self.session).participant(order_id, actor_id)
         conditions = [Message.order_id == order_id]
         if after_id:
             conditions.append(Message.id > after_id)
-        return await self.repository.list(
-            *conditions, order_by=Message.id, offset=offset, limit=limit
+        if before_id:
+            conditions.append(Message.id < before_id)
+        messages, total = await self.repository.list(
+            *conditions,
+            order_by=Message.id.desc() if latest else Message.id,
+            offset=offset,
+            limit=limit,
         )
+        return (list(reversed(messages)) if latest else messages), total
 
     async def send(self, order_id: int, actor_id: int, data):
         order = await OrderService(self.session).participant(order_id, actor_id, lock=True)

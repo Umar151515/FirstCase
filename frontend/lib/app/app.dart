@@ -116,17 +116,17 @@ class FirstCaseApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final dark = ref.watch(themeProvider);
     final colors = (dark ? FColors.neutralDark : FColors.neutralLight).copyWith(
-      primary: dark ? const Color(0xFFAAC9F4) : accent,
+      primary: dark ? const Color(0xFFA7C3EE) : accent,
       primaryForeground: dark ? const Color(0xFF102B50) : Colors.white,
-      background: dark ? const Color(0xFF0E1726) : const Color(0xFFFEFDFC),
-      foreground: dark ? const Color(0xFFE9EDF3) : const Color(0xFF18283F),
-      secondary: dark ? const Color(0xFF18273D) : const Color(0xFFF1F4F8),
+      background: dark ? const Color(0xFF151B21) : const Color(0xFFF6F5F1),
+      foreground: dark ? const Color(0xFFEAECE8) : const Color(0xFF262D32),
+      secondary: dark ? const Color(0xFF252D35) : const Color(0xFFECEBE5),
       secondaryForeground: dark
           ? const Color(0xFFE1E8F1)
-          : const Color(0xFF243A56),
-      muted: dark ? const Color(0xFF152238) : const Color(0xFFF3F5F8),
-      mutedForeground: dark ? const Color(0xFFA2AFC2) : const Color(0xFF617087),
-      border: dark ? const Color(0xFF28364B) : const Color(0xFFE0E5EC),
+          : const Color(0xFF414947),
+      muted: dark ? const Color(0xFF202830) : const Color(0xFFF0EFE9),
+      mutedForeground: dark ? const Color(0xFFA6ADA9) : const Color(0xFF666F6C),
+      border: dark ? const Color(0xFF343D43) : const Color(0xFFDDDFD7),
     );
     final theme = FThemeData(colors: colors, touch: true);
     return MaterialApp.router(

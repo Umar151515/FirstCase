@@ -113,7 +113,10 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
           StateMessage(
             context.l10n.taskLoadFailed,
             subtitle: '$loadError',
-            action: FButton(onPress: load, child: Text(context.l10n.retry)),
+            action: FButton(
+              onPress: load,
+              child: Flexible(child: Text(context.l10n.retry)),
+            ),
           ),
         ],
       );

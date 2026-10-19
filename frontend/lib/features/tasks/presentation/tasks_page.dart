@@ -27,7 +27,21 @@ class _TasksPageState extends ConsumerState<TasksPage> {
   String sort = 'newest';
   String period = '';
   String aiPolicy = '';
+  String cityQuery = '';
+  bool filtersOpen = false;
   int offset = 0;
+
+  @override
+  void didUpdateWidget(covariant TasksPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialQuery != widget.initialQuery ||
+        oldWidget.category != widget.category) {
+      search.text = query = widget.initialQuery;
+      category = widget.category ?? '';
+      offset = 0;
+    }
+  }
+
   @override
   void dispose() {
     search.dispose();
@@ -35,8 +49,22 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     super.dispose();
   }
 
+  void findTasks() => setState(() {
+    query = search.text.trim();
+    cityQuery = city.text.trim();
+    offset = 0;
+  });
+
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
+    final mobile = MediaQuery.sizeOf(context).width < 650;
+    final filterCount = [
+      aiPolicy.isNotEmpty,
+      period.isNotEmpty,
+      status != 'published',
+      cityQuery.isNotEmpty,
+    ].where((active) => active).length;
     final path = Uri(
       path: '/tasks',
       queryParameters: {
@@ -44,7 +72,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
         if (category.isNotEmpty) 'category_id': category,
         if (status.isNotEmpty) 'status': status,
         if (aiPolicy.isNotEmpty) 'ai_policy': aiPolicy,
-        if (city.text.isNotEmpty) 'city': city.text.trim(),
+        if (cityQuery.isNotEmpty) 'city': cityQuery,
         if (period.isNotEmpty)
           'created_after': DateTime.now()
               .subtract(Duration(days: int.parse(period)))
@@ -58,12 +86,14 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     return PageBody(
       children: [
         PageTitle(
-          context.l10n.adminTasks,
-          subtitle: context.l10n.tasksSubtitle,
-          action: MediaQuery.sizeOf(context).width > 700
+          l.adminTasks,
+          subtitle: l.tasksSubtitle,
+          action: !mobile
               ? FButton(
+                  mainAxisSize: MainAxisSize.min,
                   onPress: () => context.go('/tasks/new'),
-                  child: Text(context.l10n.createOrder),
+                  prefix: const Icon(FLucideIcons.plus, size: 16),
+                  child: Flexible(child: Text(l.navCreate)),
                 )
               : null,
         ),
@@ -72,110 +102,157 @@ class _TasksPageState extends ConsumerState<TasksPage> {
             Expanded(
               child: FTextField(
                 control: .managed(controller: search),
-                hint: context.l10n.taskSearchHint,
-                onSubmit: (v) => setState(() {
-                  query = v;
-                  offset = 0;
-                }),
+                hint: l.taskSearchHint,
+                onSubmit: (_) => findTasks(),
+                prefixBuilder: (_, _, _) => Padding(
+                  padding: const EdgeInsets.only(left: 12, right: 8),
+                  child: Icon(
+                    FLucideIcons.search,
+                    size: 17,
+                    color: quiet(context),
+                  ),
+                ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             FButton(
-              onPress: () => setState(() {
-                query = search.text;
-                offset = 0;
-              }),
-              prefix: const Icon(FLucideIcons.search, size: 16),
-              child: Text(context.l10n.search),
+              mainAxisSize: MainAxisSize.min,
+              semanticsLabel: l.search,
+              onPress: findTasks,
+              child: mobile
+                  ? const Icon(FLucideIcons.arrowRight, size: 18)
+                  : Text(l.search),
+            ),
+            const SizedBox(width: 8),
+            FButton(
+              mainAxisSize: MainAxisSize.min,
+              variant: filtersOpen || filterCount > 0 ? .secondary : .outline,
+              semanticsLabel:
+                  '${l.filter}${filterCount > 0 ? ' · $filterCount' : ''}',
+              onPress: () => setState(() => filtersOpen = !filtersOpen),
+              prefix: const Icon(FLucideIcons.slidersHorizontal, size: 16),
+              child: mobile
+                  ? (filterCount > 0
+                        ? Text('$filterCount')
+                        : const SizedBox.shrink())
+                  : Text(
+                      '${l.filter}${filterCount > 0 ? ' · $filterCount' : ''}',
+                    ),
             ),
           ],
         ),
-        const SizedBox(height: 22),
+        const SizedBox(height: 20),
         ref
             .watch(categoriesProvider)
             .when(
-              data: (categories) => ChoiceField(
-                context.l10n.category,
+              data: (categories) => FilterTabs(
                 value: category,
                 options: {
-                  '': context.l10n.allCategories,
-                  for (final c in categories) '${c['id']}': c['name'] as String,
+                  '': l.allCategories,
+                  for (final c in categories)
+                    '${c['id']}': categoryLabel(
+                      context,
+                      c['slug'] as String,
+                      fallback: c['name'] as String,
+                    ),
                 },
-                onChange: (v) => setState(() {
-                  category = v;
+                onChange: (value) => setState(() {
+                  category = value;
                   offset = 0;
                 }),
               ),
-              loading: () => const SizedBox(height: 35),
+              loading: () => const SizedBox(height: 46),
               error: (_, _) => const SizedBox.shrink(),
             ),
-        Wrap(
-          spacing: 28,
-          children: [
-            ChoiceField(
-              context.l10n.aiPolicyLabel,
-              value: aiPolicy,
-              options: {
-                '': context.l10n.aiPolicyAny,
-                ...aiPolicyOptions(context),
-              },
-              onChange: (value) => setState(() {
-                aiPolicy = value;
-                offset = 0;
-              }),
+        Divider(height: 1, color: edge(context)),
+        if (filtersOpen) ...[
+          const SizedBox(height: 22),
+          Panel(
+            padding: mobile ? 18 : 24,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ChoiceField(
+                  l.aiPolicyLabel,
+                  value: aiPolicy,
+                  options: {'': l.aiPolicyAny, ...aiPolicyOptions(context)},
+                  onChange: (value) => setState(() {
+                    aiPolicy = value;
+                    offset = 0;
+                  }),
+                ),
+                Wrap(
+                  spacing: 32,
+                  children: [
+                    ChoiceField(
+                      l.publicationDate,
+                      value: period,
+                      options: {
+                        '': l.allTime,
+                        '1': l.today,
+                        '7': l.lastWeek,
+                        '30': l.lastMonth,
+                      },
+                      onChange: (value) => setState(() {
+                        period = value;
+                        offset = 0;
+                      }),
+                    ),
+                    ChoiceField(
+                      l.status,
+                      value: status,
+                      options: {
+                        'published': l.filterOpen,
+                        'assigned': l.statusInProgress,
+                        'completed': l.filterCompleted,
+                        '': l.all,
+                      },
+                      onChange: (value) => setState(() {
+                        status = value;
+                        offset = 0;
+                      }),
+                    ),
+                  ],
+                ),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 360),
+                  child: FTextField(
+                    control: .managed(controller: city),
+                    label: Text(l.city),
+                    hint: l.citySearchHint,
+                    onSubmit: (_) => findTasks(),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 10,
+                  children: [
+                    FButton(
+                      mainAxisSize: MainAxisSize.min,
+                      size: .sm,
+                      onPress: findTasks,
+                      child: Flexible(child: Text(l.filtersApply)),
+                    ),
+                    FButton(
+                      mainAxisSize: MainAxisSize.min,
+                      size: .sm,
+                      variant: .ghost,
+                      onPress: () => setState(() {
+                        aiPolicy = period = cityQuery = '';
+                        city.clear();
+                        status = 'published';
+                        offset = 0;
+                      }),
+                      child: Flexible(child: Text(l.filtersReset)),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            ChoiceField(
-              context.l10n.publicationDate,
-              value: period,
-              options: {
-                '': context.l10n.allTime,
-                '1': context.l10n.today,
-                '7': context.l10n.lastWeek,
-                '30': context.l10n.lastMonth,
-              },
-              onChange: (v) => setState(() {
-                period = v;
-                offset = 0;
-              }),
-            ),
-            ChoiceField(
-              context.l10n.status,
-              value: status,
-              options: {
-                'published': context.l10n.filterOpen,
-                'assigned': context.l10n.statusInProgress,
-                'completed': context.l10n.filterCompleted,
-                '': context.l10n.all,
-              },
-              onChange: (v) => setState(() {
-                status = v;
-                offset = 0;
-              }),
-            ),
-            ChoiceField(
-              context.l10n.sort,
-              value: sort,
-              options: {
-                'newest': context.l10n.newestFirst,
-                'oldest': context.l10n.oldestFirst,
-                'deadline': context.l10n.deadlineSoonest,
-              },
-              onChange: (v) => setState(() {
-                sort = v;
-                offset = 0;
-              }),
-            ),
-          ],
-        ),
-        SizedBox(
-          width: 300,
-          child: FTextField(
-            control: .managed(controller: city),
-            hint: context.l10n.citySearchHint,
-            onSubmit: (_) => setState(() => offset = 0),
           ),
-        ),
-        const SizedBox(height: 28),
+        ],
+        const SizedBox(height: 22),
         ResourceView(
           path,
           builder: (data) {
@@ -184,43 +261,96 @@ class _TasksPageState extends ConsumerState<TasksPage> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  context.l10n.tasksFound(total),
-                  style: const TextStyle(color: muted, fontSize: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 12,
+                    runSpacing: 8,
+                    children: [
+                      Text(
+                        l.tasksFound(total),
+                        style: TextStyle(color: quiet(context), fontSize: 12),
+                      ),
+                      Semantics(
+                        label: l.sort,
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: sort,
+                            isDense: true,
+                            dropdownColor: paper(context),
+                            borderRadius: BorderRadius.circular(6),
+                            style: TextStyle(fontSize: 12, color: ink(context)),
+                            items: [
+                              for (final entry in {
+                                'newest': l.newestFirst,
+                                'oldest': l.oldestFirst,
+                                'deadline': l.deadlineSoonest,
+                              }.entries)
+                                DropdownMenuItem(
+                                  value: entry.key,
+                                  child: Text(entry.value),
+                                ),
+                            ],
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() {
+                                  sort = value;
+                                  offset = 0;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 20),
                 if (tasks.isEmpty)
-                  StateMessage(
-                    context.l10n.tasksEmpty,
-                    subtitle: context.l10n.tasksEmptyHint,
-                  )
+                  StateMessage(l.tasksEmpty, subtitle: l.tasksEmptyHint)
                 else
                   TaskGrid(tasks),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    FButton(
-                      variant: .outline,
-                      onPress: offset == 0
-                          ? null
-                          : () => setState(() => offset -= 12),
-                      child: Text(context.l10n.back),
+                const SizedBox(height: 28),
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 340),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: FButton(
+                            variant: .outline,
+                            size: .sm,
+                            onPress: offset == 0
+                                ? null
+                                : () => setState(() => offset -= 12),
+                            child: Flexible(child: Text(l.back)),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 18),
+                          child: Text(
+                            '${offset ~/ 12 + 1} / ${(total / 12).ceil().clamp(1, 9999)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: quiet(context),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: FButton(
+                            variant: .outline,
+                            size: .sm,
+                            onPress: offset + 12 >= total
+                                ? null
+                                : () => setState(() => offset += 12),
+                            child: Flexible(child: Text(l.next)),
+                          ),
+                        ),
+                      ],
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(18),
-                      child: Text(
-                        '${offset ~/ 12 + 1} / ${(total / 12).ceil().clamp(1, 9999)}',
-                      ),
-                    ),
-                    FButton(
-                      variant: .outline,
-                      onPress: offset + 12 >= total
-                          ? null
-                          : () => setState(() => offset += 12),
-                      child: Text(context.l10n.next),
-                    ),
-                  ],
+                  ),
                 ),
               ],
             );

@@ -148,7 +148,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
                       query = search.text;
                       offset = 0;
                     }),
-                    child: Text(context.l10n.search),
+                    child: Flexible(child: Text(context.l10n.search)),
                   ),
                 ],
               ),
@@ -215,7 +215,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
                         onPress: offset == 0
                             ? null
                             : () => setState(() => offset -= 20),
-                        child: Text(context.l10n.back),
+                        child: Flexible(child: Text(context.l10n.back)),
                       ),
                       Padding(
                         padding: const EdgeInsets.all(15),
@@ -226,7 +226,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
                         onPress: offset + 20 >= (data['total'] as int)
                             ? null
                             : () => setState(() => offset += 20),
-                        child: Text(context.l10n.next),
+                        child: Flexible(child: Text(context.l10n.next)),
                       ),
                     ],
                   ),
@@ -272,7 +272,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
               FButton(
                 variant: .outline,
                 onPress: () => context.go('/users/${person.id}'),
-                child: Text(context.l10n.navProfile),
+                child: Flexible(child: Text(context.l10n.navProfile)),
               ),
               FButton(
                 onPress: () => modal(
@@ -285,8 +285,10 @@ class _AdminPageState extends ConsumerState<AdminPage> {
                     data: {'status': blocked ? 'active' : 'blocked'},
                   ),
                 ),
-                child: Text(
-                  blocked ? context.l10n.unblock : context.l10n.block,
+                child: Flexible(
+                  child: Text(
+                    blocked ? context.l10n.unblock : context.l10n.block,
+                  ),
                 ),
               ),
             ],
@@ -319,7 +321,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
               FButton(
                 variant: .outline,
                 onPress: () => context.go('/tasks/${row['id']}'),
-                child: Text(context.l10n.openTask),
+                child: Flexible(child: Text(context.l10n.openTask)),
               ),
               FButton(
                 onPress: () => modal(
@@ -332,10 +334,12 @@ class _AdminPageState extends ConsumerState<AdminPage> {
                     data: {'is_hidden': row['is_hidden'] != true},
                   ),
                 ),
-                child: Text(
-                  row['is_hidden'] == true
-                      ? context.l10n.restore
-                      : context.l10n.hide,
+                child: Flexible(
+                  child: Text(
+                    row['is_hidden'] == true
+                        ? context.l10n.restore
+                        : context.l10n.hide,
+                  ),
                 ),
               ),
             ],
@@ -392,7 +396,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
                     ),
                   ),
                 ),
-                child: Text(context.l10n.eventHistory),
+                child: Flexible(child: Text(context.l10n.eventHistory)),
               ),
               if (row['status'] == 'disputed') ...[
                 FButton(
@@ -405,7 +409,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
                       method: 'POST',
                     ),
                   ),
-                  child: Text(context.l10n.resumeWork),
+                  child: Flexible(child: Text(context.l10n.resumeWork)),
                 ),
                 FButton(
                   variant: .outline,
@@ -418,7 +422,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
                       method: 'POST',
                     ),
                   ),
-                  child: Text(context.l10n.cancelOrder),
+                  child: Flexible(child: Text(context.l10n.cancelOrder)),
                 ),
               ],
             ],
@@ -466,13 +470,15 @@ class _AdminPageState extends ConsumerState<AdminPage> {
               FButton(
                 onPress: () =>
                     modal(context, ReportDecisionForm(row['id'] as int)),
-                child: Text(context.l10n.adminProcessReport),
+                child: Flexible(child: Text(context.l10n.adminProcessReport)),
               ),
               if (['pending', 'in_review'].contains(row['status']))
                 FButton(
                   variant: .outline,
                   onPress: () => modal(context, EvidenceForm(row['id'] as int)),
-                  child: Text(context.l10n.adminInspectEvidence),
+                  child: Flexible(
+                    child: Text(context.l10n.adminInspectEvidence),
+                  ),
                 ),
             ],
           ),

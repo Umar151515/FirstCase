@@ -17,6 +17,7 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   final search = TextEditingController();
+
   @override
   void dispose() {
     search.dispose();
@@ -24,397 +25,480 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   void findTasks() =>
-      context.go('/tasks?q=${Uri.encodeQueryComponent(search.text)}');
+      context.go('/tasks?q=${Uri.encodeQueryComponent(search.text.trim())}');
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
     final mobile = MediaQuery.sizeOf(context).width < 700;
-    final dark = ref.watch(themeProvider);
     return PageBody(
       children: [
-        Padding(
-          padding: EdgeInsets.symmetric(vertical: mobile ? 16 : 32),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                flex: 7,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l.homeKicker,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.theme.colors.mutedForeground,
+        LayoutBuilder(
+          builder: (context, constraints) => Padding(
+            padding: EdgeInsets.only(
+              top: mobile ? 0 : 24,
+              bottom: mobile ? 28 : 36,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l.homeKicker,
+                        style: TextStyle(fontSize: 12, color: quiet(context)),
                       ),
-                    ),
-                    const SizedBox(height: 18),
-                    Text(
-                      l.homeTitle,
-                      style: TextStyle(
-                        fontSize: mobile ? 34 : 48,
-                        height: 1.12,
-                        letterSpacing: -1.4,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 560),
-                      child: Text(
-                        l.homeIntro,
+                      const SizedBox(height: 22),
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(text: '${l.homeTitle}\n'),
+                            TextSpan(
+                              text: l.homeTitleAccent,
+                              style: TextStyle(
+                                color: context.theme.colors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
                         style: TextStyle(
-                          fontSize: 16,
-                          height: 1.65,
-                          color: context.theme.colors.mutedForeground,
+                          fontSize: mobile ? 38 : 56,
+                          height: 1.08,
+                          letterSpacing: mobile ? -1.4 : -2.2,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 28),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: FTextField(
-                            control: .managed(controller: search),
-                            hint: l.homeSearchHint,
-                            onSubmit: (_) => findTasks(),
-                            prefixBuilder: (_, _, _) => const Padding(
-                              padding: EdgeInsets.only(left: 12, right: 8),
-                              child: Icon(FLucideIcons.search, size: 18),
-                            ),
+                      const SizedBox(height: 22),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 530),
+                        child: Text(
+                          l.homeIntro,
+                          style: TextStyle(
+                            fontSize: 15,
+                            height: 1.7,
+                            color: quiet(context),
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        FButton(
-                      mainAxisSize: MainAxisSize.min,
-                          onPress: findTasks,
-                          child: mobile
-                              ? const Icon(FLucideIcons.arrowRight, size: 18)
-                              : Flexible(child: Text(l.homeSearch)),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    FButton(
-                      variant: .ghost,
-                      mainAxisSize: MainAxisSize.min,
-                      onPress: () => context.go('/tasks/new'),
-                      prefix: const Icon(FLucideIcons.plus, size: 16),
-                      child: Flexible(child: Text(l.homeCreate)),
-                    ),
-                  ],
-                ),
-              ),
-              if (!mobile) ...[
-                const SizedBox(width: 64),
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: Brand(mark: true, width: 210),
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        l.brandDescription,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 12, color: muted),
+                      const SizedBox(height: 28),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 660),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: FTextField(
+                                control: .managed(controller: search),
+                                hint: l.homeSearchHint,
+                                onSubmit: (_) => findTasks(),
+                                prefixBuilder: (_, _, _) => Padding(
+                                  padding: const EdgeInsets.only(
+                                    left: 14,
+                                    right: 10,
+                                  ),
+                                  child: Icon(
+                                    FLucideIcons.search,
+                                    size: 18,
+                                    color: quiet(context),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            FButton(
+                              mainAxisSize: MainAxisSize.min,
+                              semanticsLabel: l.homeSearch,
+                              onPress: findTasks,
+                              child: mobile
+                                  ? const Icon(
+                                      FLucideIcons.arrowRight,
+                                      size: 18,
+                                    )
+                                  : Flexible(child: Text(l.homeSearch)),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
+                if (constraints.maxWidth > 960) ...[
+                  const SizedBox(width: 80),
+                  const SizedBox(width: 300, child: _GettingStarted()),
+                ],
               ],
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-        Divider(color: edge(context)),
-        const SizedBox(height: 24),
-        _Section(l.homeCategories),
-        ref
-            .watch(categoriesProvider)
-            .when(
-              data: (categories) => LayoutBuilder(
-                builder: (context, constraints) {
-                  final cols = constraints.maxWidth > 950
-                      ? 6
-                      : constraints.maxWidth > 550
-                      ? 3
-                      : 2;
-                  final width = (constraints.maxWidth - (cols - 1) * 10) / cols;
-                  return Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: categories
-                        .map(
-                          (category) => SizedBox(
-                            width: width,
-                            child: Panel(
-                              padding: 16,
-                              onTap: () => context.go(
-                                '/tasks?category_id=${category['id']}',
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    categoryIcon(category['slug'] as String),
-                                    size: 18,
-                                    color: dark
-                                        ? const Color(0xFF9ABDEB)
-                                        : accent,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      categoryLabel(
-                                        context,
-                                        category['slug'] as String,
-                                        fallback: category['name'] as String,
-                                      ),
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  );
-                },
-              ),
-              loading: () => const LoadingView(),
-              error: (error, _) =>
-                  StateMessage(l.homeCategoriesUnavailable, subtitle: '$error'),
             ),
-        const SizedBox(height: 42),
-        _Section(
-          l.homeRecent,
-          action: FButton(
-            variant: .ghost,
-            mainAxisSize: MainAxisSize.min,
-            onPress: () => context.go('/tasks'),
-            suffix: const Icon(FLucideIcons.arrowRight, size: 16),
-            child: Flexible(child: Text(l.homeSeeAll)),
           ),
         ),
-        ResourceView(
-          '/tasks?status=published&limit=6&sort=newest',
-          builder: (data) {
-            final tasks = items(data).map(Task.new).toList();
-            return tasks.isEmpty ? StateMessage(l.homeEmpty) : TaskGrid(tasks);
-          },
-        ),
-        const SizedBox(height: 42),
-        _Section(l.homeApproach),
-        LayoutBuilder(
-          builder: (context, constraints) => Wrap(
-            spacing: 24,
-            runSpacing: 20,
-            children: [l.homeStepFind, l.homeStepWork, l.homeStepKeep].indexed
-                .map(
-                  (entry) => SizedBox(
-                    width: constraints.maxWidth > 700
-                        ? (constraints.maxWidth - 48) / 3
-                        : constraints.maxWidth,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '0${entry.$1 + 1}',
-                          style: TextStyle(
-                            fontSize: 22,
-                            color: context.theme.colors.mutedForeground,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              entry.$2,
-                              style: const TextStyle(fontSize: 14, height: 1.5),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-                .toList(),
-          ),
-        ),
-        const SizedBox(height: 32),
         Container(
-          padding: const EdgeInsets.all(24),
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(vertical: mobile ? 12 : 18),
           decoration: BoxDecoration(
-            color: dark ? const Color(0xFF14243B) : const Color(0xFFF0F4FA),
             border: Border(
-              left: BorderSide(
-                color: dark ? const Color(0xFF9ABDEB) : accent,
-                width: 3,
-              ),
+              top: BorderSide(color: edge(context)),
+              bottom: BorderSide(color: edge(context)),
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l.homeAiTitle,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                l.homeAiBody,
-                style: TextStyle(
-                  height: 1.65,
-                  color: context.theme.colors.mutedForeground,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 42),
-        _Section(l.homePeople),
-        ResourceView(
-          '/users?limit=4',
-          builder: (data) => LayoutBuilder(
-            builder: (context, constraints) {
-              final people = items(data);
-              if (people.isEmpty) return StateMessage(l.homePeopleEmpty);
-              final cols = constraints.maxWidth > 950
-                  ? 4
-                  : constraints.maxWidth > 550
-                  ? 2
-                  : 1;
-              return Wrap(
-                spacing: 16,
-                runSpacing: 16,
-                children: people.map((json) {
-                  final person = Person(json);
-                  return SizedBox(
-                    width: (constraints.maxWidth - (cols - 1) * 16) / cols,
-                    child: Panel(
-                      padding: 20,
-                      onTap: () => context.go('/users/${person.id}'),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              PersonAvatar(person, size: 44),
-                              const Spacer(),
-                              if (person.rating > 0) ...[
-                                const Icon(
-                                  FLucideIcons.star,
-                                  size: 13,
-                                  color: muted,
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  person.rating.toStringAsFixed(1),
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                              ] else
-                                Text(
-                                  l.homeNewcomer,
-                                  style: const TextStyle(
-                                    color: muted,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            person.name,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            person.specialty.isEmpty
-                                ? l.homeOpenToWork
-                                : person.specialty,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: muted,
-                              height: 1.5,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 6,
-                            children: person.skills
-                                .take(2)
-                                .map((s) => Tag(s, color: muted))
-                                .toList(),
-                          ),
-                        ],
+          child: ref
+              .watch(categoriesProvider)
+              .when(
+                data: (categories) => Wrap(
+                  spacing: mobile ? 16 : 28,
+                  runSpacing: 12,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        l.homeCategories,
+                        style: TextStyle(fontSize: 12, color: quiet(context)),
                       ),
                     ),
-                  );
-                }).toList(),
-              );
-            },
-          ),
+                    for (final category in categories) _CategoryLink(category),
+                  ],
+                ),
+                loading: () => const SizedBox(height: 32),
+                error: (_, _) => Text(
+                  l.homeCategoriesUnavailable,
+                  style: TextStyle(color: quiet(context)),
+                ),
+              ),
         ),
-        const SizedBox(height: 40),
+        const SizedBox(height: 34),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final wide = constraints.maxWidth > 960;
+            final tasks = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _Section(
+                  l.homeRecent,
+                  action: FButton(
+                    variant: .ghost,
+                    size: .sm,
+                    mainAxisSize: MainAxisSize.min,
+                    onPress: () => context.go('/tasks'),
+                    suffix: const Icon(FLucideIcons.arrowRight, size: 15),
+                    child: Flexible(child: Text(mobile ? l.all : l.homeSeeAll)),
+                  ),
+                ),
+                ResourceView(
+                  '/tasks?status=published&limit=6&sort=newest',
+                  builder: (data) {
+                    final tasks = items(data).map(Task.new).toList();
+                    return tasks.isEmpty
+                        ? StateMessage(l.homeEmpty)
+                        : TaskGrid(tasks);
+                  },
+                ),
+              ],
+            );
+            return wide
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: tasks),
+                      const SizedBox(width: 40),
+                      const SizedBox(width: 300, child: _Community()),
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      tasks,
+                      const SizedBox(height: 40),
+                      const _GettingStarted(),
+                      const SizedBox(height: 40),
+                      const _Community(),
+                    ],
+                  );
+          },
+        ),
+        const SizedBox(height: 48),
         Divider(color: edge(context)),
         const SizedBox(height: 20),
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 24,
-          runSpacing: 12,
-          children: [
-            const Brand(width: 112),
-            Text(
-              l.homeFooter,
-              style: const TextStyle(fontSize: 12, color: muted),
-            ),
-          ],
+        SizedBox(
+          width: double.infinity,
+          child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 24,
+            runSpacing: 12,
+            children: [
+              const Brand(width: 110),
+              Text(
+                l.homeFooter,
+                style: TextStyle(fontSize: 12, color: quiet(context)),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 16),
       ],
     );
   }
+}
+
+class _CategoryLink extends StatelessWidget {
+  const _CategoryLink(this.category);
+  final Json category;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(3),
+      onTap: () => context.go('/tasks?category_id=${category['id']}'),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              categoryIcon(category['slug'] as String),
+              size: 15,
+              color: quiet(context),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                categoryLabel(
+                  context,
+                  category['slug'] as String,
+                  fallback: category['name'] as String,
+                ),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _GettingStarted extends StatelessWidget {
+  const _GettingStarted();
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    return Container(
+      padding: const EdgeInsets.only(left: 26, top: 4, bottom: 4),
+      decoration: BoxDecoration(
+        border: Border(left: BorderSide(color: edge(context))),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l.homeApproach,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 24),
+          for (final entry in [
+            l.homeStepFind,
+            l.homeStepWork,
+            l.homeStepKeep,
+          ].indexed)
+            Padding(
+              padding: EdgeInsets.only(bottom: entry.$1 == 2 ? 0 : 20),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '0${entry.$1 + 1}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.7,
+                      color: context.theme.colors.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      entry.$2,
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.6,
+                        color: quiet(context),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Community extends StatelessWidget {
+  const _Community();
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Panel(
+          padding: 24,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                FLucideIcons.notebookPen,
+                size: 22,
+                color: context.theme.colors.primary,
+              ),
+              const SizedBox(height: 18),
+              Text(
+                l.homeForCustomers,
+                style: const TextStyle(
+                  fontSize: 21,
+                  height: 1.3,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: -.4,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                l.homeForCustomersBody,
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.7,
+                  color: quiet(context),
+                ),
+              ),
+              const SizedBox(height: 20),
+              FButton(
+                variant: .outline,
+                size: .sm,
+                onPress: () => context.go('/tasks/new'),
+                suffix: const Icon(FLucideIcons.arrowRight, size: 15),
+                child: Flexible(child: Text(l.homeCreate)),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 32),
+        _Section(l.homePeople),
+        ResourceView(
+          '/users?limit=4',
+          builder: (data) {
+            final people = items(data).map(Person.new).toList();
+            return people.isEmpty
+                ? Text(
+                    l.homePeopleEmpty,
+                    style: TextStyle(color: quiet(context), fontSize: 13),
+                  )
+                : Column(
+                    children: [for (final person in people) _PersonRow(person)],
+                  );
+          },
+        ),
+        const SizedBox(height: 28),
+        Divider(color: edge(context)),
+        const SizedBox(height: 20),
+        Text(
+          l.homeAiTitle,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          l.homeAiBody,
+          style: TextStyle(fontSize: 12, height: 1.8, color: quiet(context)),
+        ),
+      ],
+    );
+  }
+}
+
+class _PersonRow extends StatelessWidget {
+  const _PersonRow(this.person);
+  final Person person;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: () => context.go('/users/${person.id}'),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 13),
+        child: Row(
+          children: [
+            PersonAvatar(person, size: 36),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    person.name,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    person.specialty.isEmpty
+                        ? context.l10n.homeOpenToWork
+                        : person.specialty,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      height: 1.4,
+                      color: quiet(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (person.rating > 0) ...[
+              const SizedBox(width: 8),
+              Icon(FLucideIcons.star, size: 12, color: quiet(context)),
+              const SizedBox(width: 4),
+              Text(
+                person.rating.toStringAsFixed(1),
+                style: const TextStyle(fontSize: 11),
+              ),
+            ],
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 class _Section extends StatelessWidget {
   const _Section(this.title, {this.action});
   final String title;
   final Widget? action;
+
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 20),
+    padding: const EdgeInsets.only(bottom: 18),
     child: LayoutBuilder(
       builder: (context, constraints) {
         final heading = Text(
           title,
           style: const TextStyle(
-            fontSize: 23,
-            letterSpacing: -.4,
-            fontWeight: FontWeight.w600,
+            fontSize: 22,
+            letterSpacing: -.6,
+            fontWeight: FontWeight.w500,
           ),
         );
-        return constraints.maxWidth < 550
+        return constraints.maxWidth < 280 && action != null
             ? Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  heading,
-                  if (action != null) ...[const SizedBox(height: 8), action!],
-                ],
+                children: [heading, const SizedBox(height: 8), action!],
               )
             : Row(
                 children: [

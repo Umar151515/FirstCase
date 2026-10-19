@@ -3,6 +3,7 @@
 from shared.features.applications.models import Application as Application
 from shared.features.auth.models import DemoMarker as DemoMarker
 from shared.features.chat.models import Message as Message
+from shared.features.chat.models import TelegramInvite as TelegramInvite
 from shared.features.deliverables.models import Deliverable as Deliverable
 from shared.features.moderation.models import ModerationAction as ModerationAction
 from shared.features.notifications.models import Notification as Notification

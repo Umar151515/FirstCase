@@ -53,8 +53,9 @@ class AppShell extends ConsumerWidget {
               container: true,
               explicitChildNodes: true,
               child: Container(
-                height: mobile ? 64 : 80,
+                height: mobile ? 64 : 76,
                 decoration: BoxDecoration(
+                  color: paper(context),
                   border: Border(bottom: BorderSide(color: edge(context))),
                 ),
                 padding: EdgeInsets.symmetric(horizontal: mobile ? 18 : 36),
@@ -63,7 +64,8 @@ class AppShell extends ConsumerWidget {
                     constraints: const BoxConstraints(maxWidth: 1220),
                     child: Row(
                       children: [
-                        GestureDetector(
+                        InkWell(
+                          borderRadius: BorderRadius.circular(4),
                           onTap: () => context.go('/'),
                           child: Brand(width: viewport < 380 ? 96 : 142),
                         ),
@@ -77,31 +79,10 @@ class AppShell extends ConsumerWidget {
                                 children: [
                                   for (final i in [0, 1, 3])
                                     Flexible(
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(
-                                          right: 6,
-                                        ),
-                                        child: FButton(
-                                          variant: .ghost,
-                                          mainAxisSize: MainAxisSize.min,
-                                          onPress: () => context.go(paths[i]),
-                                          child: Flexible(
-                                            child: Text(
-                                              labels[i],
-                                              style: TextStyle(
-                                                color: index == i
-                                                    ? context
-                                                          .theme
-                                                          .colors
-                                                          .primary
-                                                    : ink(context),
-                                                fontWeight: index == i
-                                                    ? FontWeight.w700
-                                                    : FontWeight.w500,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
+                                      child: _NavLink(
+                                        labels[i],
+                                        selected: index == i,
+                                        onTap: () => context.go(paths[i]),
                                       ),
                                     ),
                                 ],
@@ -133,21 +114,24 @@ class AppShell extends ConsumerWidget {
                           if (!mobile) ...[
                             const SizedBox(width: 10),
                             FButton(
+                              mainAxisSize: MainAxisSize.min,
                               onPress: () => context.go('/tasks/new'),
                               prefix: const Icon(FLucideIcons.plus, size: 16),
-                              child: Text(l.navCreate),
+                              child: Flexible(child: Text(l.navCreate)),
                             ),
                             const SizedBox(width: 14),
                           ],
-                          GestureDetector(
+                          InkWell(
+                            borderRadius: BorderRadius.circular(20),
                             onTap: () => context.go('/profile'),
                             child: PersonAvatar(user, size: 34),
                           ),
                         ] else
                           FButton(
+                            mainAxisSize: MainAxisSize.min,
                             size: .sm,
                             onPress: () => context.go('/login'),
-                            child: Text(l.signIn),
+                            child: Flexible(child: Text(l.signIn)),
                           ),
                       ],
                     ),
@@ -160,7 +144,10 @@ class AppShell extends ConsumerWidget {
                 container: true,
                 explicitChildNodes: true,
                 child: Container(
-                  color: accent.withValues(alpha: .055),
+                  decoration: BoxDecoration(
+                    color: context.theme.colors.muted,
+                    border: Border(bottom: BorderSide(color: edge(context))),
+                  ),
                   padding: EdgeInsets.symmetric(
                     horizontal: mobile ? 18 : 36,
                     vertical: 8,
@@ -172,7 +159,8 @@ class AppShell extends ConsumerWidget {
                         children: [
                           Text(
                             l.demoLabel,
-                            style: const TextStyle(
+                            style: TextStyle(
+                              color: quiet(context),
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                             ),
@@ -197,8 +185,10 @@ class AppShell extends ConsumerWidget {
                             mainAxisSize: MainAxisSize.min,
                             onPress: () =>
                                 modal(context, const IdentityPicker()),
-                            child: Text(
-                              mobile ? l.demoSwitchRole : l.demoSignInAs,
+                            child: Flexible(
+                              child: Text(
+                                mobile ? l.demoSwitchRole : l.demoSignInAs,
+                              ),
                             ),
                           ),
                         ],
@@ -233,4 +223,41 @@ class AppShell extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _NavLink extends StatelessWidget {
+  const _NavLink(this.label, {required this.selected, required this.onTap});
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    selected: selected,
+    child: InkWell(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 14),
+        padding: const EdgeInsets.symmetric(vertical: 27),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: selected
+                  ? context.theme.colors.primary
+                  : Colors.transparent,
+              width: 2,
+            ),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            color: selected ? context.theme.colors.primary : quiet(context),
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+          ),
+        ),
+      ),
+    ),
+  );
 }

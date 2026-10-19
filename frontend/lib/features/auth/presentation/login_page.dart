@@ -40,7 +40,7 @@ class LoginPage extends ConsumerWidget {
                   subtitle: '$e',
                   action: FButton(
                     onPress: () => ref.invalidate(modeProvider),
-                    child: Text(context.l10n.retry),
+                    child: Flexible(child: Text(context.l10n.retry)),
                   ),
                 ),
               ),
@@ -51,13 +51,13 @@ class LoginPage extends ConsumerWidget {
               subtitle: '${ref.watch(sessionProvider).error}',
               action: FButton(
                 onPress: () => ref.invalidate(sessionProvider),
-                child: Text(context.l10n.retryLogin),
+                child: Flexible(child: Text(context.l10n.retryLogin)),
               ),
             ),
           FButton(
             variant: .ghost,
             onPress: () => context.go('/'),
-            child: Text(context.l10n.browseWithoutLogin),
+            child: Flexible(child: Text(context.l10n.browseWithoutLogin)),
           ),
         ],
       ),
@@ -93,7 +93,7 @@ class IdentityPicker extends ConsumerWidget {
               subtitle: '$e',
               action: FButton(
                 onPress: () => ref.invalidate(demoUsersProvider),
-                child: Text(context.l10n.retry),
+                child: Flexible(child: Text(context.l10n.retry)),
               ),
             ),
           ),
@@ -152,12 +152,15 @@ class _IdentityRow extends ConsumerWidget {
   );
 }
 
-Widget requireLogin(BuildContext context) => StateMessage(
-  context.l10n.signInRequired,
-  subtitle: context.l10n.loginRequiredHint,
-  icon: FLucideIcons.userRound,
-  action: FButton(
-    onPress: () => context.go('/login'),
-    child: Text(context.l10n.loginFirstCase),
+Widget requireLogin(BuildContext context) => Padding(
+  padding: const EdgeInsets.all(24.0),
+  child: StateMessage(
+    context.l10n.signInRequired,
+    subtitle: context.l10n.loginRequiredHint,
+    icon: FLucideIcons.userRound,
+    action: FButton(
+      onPress: () => context.go('/login'),
+      child: Flexible(child: Text(context.l10n.loginFirstCase)),
+    ),
   ),
 );

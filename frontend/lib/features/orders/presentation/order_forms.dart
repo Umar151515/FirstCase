@@ -341,14 +341,17 @@ class _PrivacyFormState extends ConsumerState<PrivacyForm> {
   );
   Widget _toggle(String text, bool selected, VoidCallback onTap) => Padding(
     padding: const EdgeInsets.only(top: 10),
-    child: FButton(
-      variant: selected ? .primary : .outline,
-      onPress: onTap,
-      prefix: Icon(
-        selected ? FLucideIcons.squareCheck : FLucideIcons.square,
-        size: 17,
+    child: Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        border: Border.all(color: edge(context)),
+        borderRadius: BorderRadius.circular(6),
       ),
-      child: Text(text, maxLines: 3, overflow: TextOverflow.ellipsis),
+      child: FCheckbox(
+        value: selected,
+        onChange: (_) => onTap(),
+        label: Text(text, softWrap: true, style: const TextStyle(height: 1.5)),
+      ),
     ),
   );
 }

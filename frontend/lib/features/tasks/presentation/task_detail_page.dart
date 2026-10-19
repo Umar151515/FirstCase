@@ -22,7 +22,7 @@ class TaskDetailPage extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         prefix: const Icon(FLucideIcons.arrowLeft, size: 15),
         onPress: () => context.go('/tasks'),
-        child: Text(context.l10n.homeSeeAll),
+        child: Flexible(child: Text(context.l10n.homeSeeAll)),
       ),
       const SizedBox(height: 20),
       ResourceView(
@@ -93,7 +93,7 @@ class TaskDetailPage extends ConsumerWidget {
                           mainAxisSize: MainAxisSize.min,
                           onPress: () =>
                               context.go('/users/${task.customerId}'),
-                          child: Text(context.l10n.navProfile),
+                          child: Flexible(child: Text(context.l10n.navProfile)),
                         ),
                       ],
                     ),
@@ -172,12 +172,14 @@ class TaskDetailPage extends ConsumerWidget {
                                     ),
                                   ),
                             prefix: const Icon(FLucideIcons.send, size: 16),
-                            child: Text(context.l10n.applyForTask),
+                            child: Flexible(
+                              child: Text(context.l10n.applyForTask),
+                            ),
                           ),
                         if (task.status == 'published' && owner) ...[
                           FButton(
                             onPress: () => context.go('/tasks/$id/edit'),
-                            child: Text(context.l10n.edit),
+                            child: Flexible(child: Text(context.l10n.edit)),
                           ),
                           ActionButton(
                             context.l10n.cancelTask,
@@ -198,7 +200,7 @@ class TaskDetailPage extends ConsumerWidget {
                             variant: .ghost,
                             onPress: () =>
                                 modal(context, ReportForm('task', id)),
-                            child: Text(context.l10n.report),
+                            child: Flexible(child: Text(context.l10n.report)),
                           ),
                       ],
                     ),
@@ -301,8 +303,10 @@ class TaskDetailPage extends ConsumerWidget {
                                       mainAxisSize: MainAxisSize.min,
                                       onPress: () =>
                                           context.go('/users/${person.id}'),
-                                      child: Text(
-                                        context.l10n.profileAndPortfolio,
+                                      child: Flexible(
+                                        child: Text(
+                                          context.l10n.profileAndPortfolio,
+                                        ),
                                       ),
                                     ),
                                     if (application['status'] == 'pending' &&

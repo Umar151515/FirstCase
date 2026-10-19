@@ -38,8 +38,11 @@ Base `/api/v1`. JSON snake_case, integer IDs, timestamps ISO8601 UTC. Protected 
 - `POST /orders/{id}/submit` `{description,links?:https-url[],attachment_ids?:int[]}` → Order; creates versioned deliverable.
 - `GET /orders/{id}/deliverables` → collection `{id,order_id,performer_id,description,links:[],attachment_ids:[],version,created_at}`.
 - `GET /orders/{id}/events` → collection `{id,order_id,actor_id,type,details:object,created_at}`.
-- `GET /orders/{id}/messages?after_id=&offset=&limit=` → oldest-first collection Message; polling supported.
+- `GET /orders/{id}/messages?after_id=&before_id=&offset=&limit=&latest=` → chronological collection Message; polling supported. `latest=true` selects the newest `limit` matching messages but returns them oldest-first. `before_id` loads earlier history, `after_id` fetches new messages without gaps. Without these flags the existing offset contract is unchanged.
 - `POST /orders/{id}/messages` `{text?:string,attachment_ids?:int[]}` → Message 201. Message `{id,order_id,author_id,author:PublicUser,text,attachment_ids:[],created_at}`.
+- `GET /orders/{id}/telegram` → current Telegram invitation or `null`, participants only (including no blanket admin access). Invitation `{id,order_id,requested_by,status:"pending"|"accepted"|"declined"|"cancelled",my_username:null|string,peer_username:null|string,created_at,responded_at}`. `peer_username` is returned only after mutual consent; declined/cancelled invitations expose no contacts.
+- `POST /orders/{id}/telegram` `{username}` → invitation 201. Accepts a username, `@username` or `https://t.me/username`; stores the normalized handle separately from public profiles and chat evidence. At most one pending or accepted invitation per order. Cancelled orders reject new invitations.
+- `POST /orders/{id}/telegram/{invite_id}/respond` `{action:"accept"|"decline"|"cancel",username?:string}` → invitation. The recipient accepts with their own username or declines. The sender can withdraw a pending invitation; either participant can cancel an accepted handoff. Stale/duplicate decisions return 409. Both sides receive localized notifications without contact data. Opening `https://t.me/{peer_username}` is a separate user action; the application does not send Telegram messages or change order status.
 - `GET /orders/{id}/reviews` → collection Review, participants only. `POST /orders/{id}/reviews` `{rating:1..5,comment?:string}` → Review 201. Customer comment required. Review `{id,order_id,author_id,recipient_id,rating,comment,created_at}`.
 
 ## Portfolio privacy

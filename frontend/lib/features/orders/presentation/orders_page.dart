@@ -31,8 +31,7 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
           context.l10n.navOrders,
           subtitle: context.l10n.ordersSubtitle,
         ),
-        ChoiceField(
-          context.l10n.section,
+        FilterTabs(
           value: tab,
           options: {
             'orders': context.l10n.ordersActiveAndCompleted,
@@ -41,6 +40,8 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
           },
           onChange: (v) => setState(() => tab = v),
         ),
+        Divider(height: 1, color: edge(context)),
+        const SizedBox(height: 24),
         if (tab == 'orders') ...[
           ChoiceField(
             context.l10n.myRole,
@@ -81,7 +82,7 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
                   subtitle: context.l10n.ordersEmptyHint,
                   action: FButton(
                     onPress: () => context.go('/tasks'),
-                    child: Text(context.l10n.navTasks),
+                    child: Flexible(child: Text(context.l10n.navTasks)),
                   ),
                 );
               }
@@ -162,7 +163,7 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
                       context.l10n.publicationsEmpty,
                       action: FButton(
                         onPress: () => context.go('/tasks/new'),
-                        child: Text(context.l10n.navCreate),
+                        child: Flexible(child: Text(context.l10n.navCreate)),
                       ),
                     )
                   : TaskGrid(tasks);

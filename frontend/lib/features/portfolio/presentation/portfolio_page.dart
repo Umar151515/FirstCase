@@ -284,7 +284,9 @@ class PortfolioDetailPage extends ConsumerWidget {
                           variant: .outline,
                           onPress: () =>
                               context.go('/users/${entry['owner_id']}'),
-                          child: Text(context.l10n.authorProfile),
+                          child: Flexible(
+                            child: Text(context.l10n.authorProfile),
+                          ),
                         ),
                         if (own)
                           FButton(
@@ -296,14 +298,16 @@ class PortfolioDetailPage extends ConsumerWidget {
                                 coverId: entry['cover_attachment_id'] as int?,
                               ),
                             ),
-                            child: Text(context.l10n.privacySettings),
+                            child: Flexible(
+                              child: Text(context.l10n.privacySettings),
+                            ),
                           ),
                         if (user != null && !own)
                           FButton(
                             variant: .ghost,
                             onPress: () =>
                                 modal(context, ReportForm('portfolio', id)),
-                            child: Text(context.l10n.report),
+                            child: Flexible(child: Text(context.l10n.report)),
                           ),
                       ],
                     ),
@@ -477,10 +481,12 @@ class _PortfolioFormPageState extends ConsumerState<PortfolioFormPage> {
                                         ? messageIds.remove(id)
                                         : messageIds.add(id);
                                   }),
-                                  child: Text(
-                                    '#${m['id']} · ${m['text']}',
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                                  child: Flexible(
+                                    child: Text(
+                                      '#${m['id']} · ${m['text']}',
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -510,8 +516,10 @@ class _PortfolioFormPageState extends ConsumerState<PortfolioFormPage> {
                                           ? attachmentIds.remove(fileId)
                                           : attachmentIds.add(fileId);
                                     }),
-                                    child: Text(
-                                      context.l10n.mediaFileLabel(fileId),
+                                    child: Flexible(
+                                      child: Text(
+                                        context.l10n.mediaFileLabel(fileId),
+                                      ),
                                     ),
                                   ),
                             ],

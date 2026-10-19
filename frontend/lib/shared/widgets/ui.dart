@@ -13,11 +13,16 @@ import 'media.dart';
 export 'brand.dart';
 
 const accent = Color(0xFF174687);
-const muted = Color(0xFF7D889A);
+const muted = Color(0xFF7D827F);
 
 Color surface(BuildContext context) => context.theme.colors.background;
 Color ink(BuildContext context) => context.theme.colors.foreground;
 Color edge(BuildContext context) => context.theme.colors.border;
+Color paper(BuildContext context) =>
+    context.theme.colors.brightness == Brightness.dark
+    ? const Color(0xFF1C232A)
+    : const Color(0xFFFFFEFB);
+Color quiet(BuildContext context) => context.theme.colors.mutedForeground;
 String dateLabel(BuildContext context, dynamic value) =>
     localizedDate(context, value);
 
@@ -34,19 +39,17 @@ class Panel extends StatelessWidget {
   final Color? color;
   final VoidCallback? onTap;
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: MouseRegion(
-      cursor: onTap == null ? MouseCursor.defer : SystemMouseCursors.click,
-      child: Container(
-        padding: EdgeInsets.all(padding),
-        decoration: BoxDecoration(
-          color: color ?? surface(context),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: edge(context)),
-        ),
-        child: child,
-      ),
+  Widget build(BuildContext context) => Material(
+    color: color ?? paper(context),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(6),
+      side: BorderSide(color: edge(context)),
+    ),
+    clipBehavior: Clip.antiAlias,
+    child: InkWell(
+      onTap: onTap,
+      hoverColor: context.theme.colors.primary.withValues(alpha: .035),
+      child: Padding(padding: EdgeInsets.all(padding), child: child),
     ),
   );
 }
@@ -59,7 +62,7 @@ class PageBody extends StatelessWidget {
   Widget build(BuildContext context) => SingleChildScrollView(
     padding: EdgeInsets.symmetric(
       horizontal: MediaQuery.sizeOf(context).width < 650 ? 18 : 36,
-      vertical: 28,
+      vertical: MediaQuery.sizeOf(context).width < 650 ? 24 : 36,
     ),
     child: Center(
       child: ConstrainedBox(
@@ -81,35 +84,49 @@ class PageTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 24),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 28,
-                  height: 1.2,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -.6,
+    child: LayoutBuilder(
+      builder: (context, constraints) {
+        final heading = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 28,
+                height: 1.2,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -.8,
+              ),
+            ),
+            if (subtitle != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 9),
+                child: Text(
+                  subtitle!,
+                  style: TextStyle(color: quiet(context), height: 1.5),
                 ),
               ),
-              if (subtitle != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 9),
-                  child: Text(
-                    subtitle!,
-                    style: const TextStyle(color: muted, height: 1.5),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        ?action,
-      ],
+          ],
+        );
+        if (action == null) return heading;
+        if (constraints.maxWidth < 600) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [heading, const SizedBox(height: 16), action!],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: heading),
+            const SizedBox(width: 20),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: constraints.maxWidth * .45),
+              child: action!,
+            ),
+          ],
+        );
+      },
     ),
   );
 }
@@ -269,6 +286,61 @@ class ChoiceField extends StatelessWidget {
   );
 }
 
+class FilterTabs extends StatelessWidget {
+  const FilterTabs({
+    required this.value,
+    required this.options,
+    required this.onChange,
+    super.key,
+  });
+  final String value;
+  final Map<String, String> options;
+  final ValueChanged<String> onChange;
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+    spacing: 22,
+    runSpacing: 4,
+    children: [
+      for (final entry in options.entries)
+        Semantics(
+          selected: value == entry.key,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => onChange(entry.key),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: value == entry.key
+                          ? context.theme.colors.primary
+                          : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                ),
+                child: Text(
+                  entry.value,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: value == entry.key
+                        ? context.theme.colors.primary
+                        : quiet(context),
+                    fontWeight: value == entry.key
+                        ? FontWeight.w600
+                        : FontWeight.w400,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+    ],
+  );
+}
+
 class Tag extends StatelessWidget {
   const Tag(this.text, {this.color = accent, this.icon, super.key});
   final String text;
@@ -278,10 +350,10 @@ class Tag extends StatelessWidget {
   Widget build(BuildContext context) {
     final tone = color == accent ? context.theme.colors.primary : color;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: tone.withValues(alpha: .1),
-        borderRadius: BorderRadius.circular(4),
+        color: tone.withValues(alpha: .07),
+        borderRadius: BorderRadius.circular(3),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -296,7 +368,7 @@ class Tag extends StatelessWidget {
               text,
               style: TextStyle(
                 fontSize: 11,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
                 color: tone,
               ),
             ),
@@ -316,7 +388,7 @@ class PersonAvatar extends StatelessWidget {
     width: size,
     height: size,
     decoration: BoxDecoration(
-      color: accent.withValues(alpha: .1),
+      color: context.theme.colors.primary.withValues(alpha: .08),
       shape: BoxShape.circle,
     ),
     clipBehavior: Clip.antiAlias,
@@ -381,7 +453,7 @@ class ResourceView extends ConsumerWidget {
           icon: FLucideIcons.wifiOff,
           action: FButton(
             onPress: () => ref.invalidate(resourceProvider(path)),
-            child: Text(context.l10n.tryAgain),
+            child: Flexible(child: Text(context.l10n.tryAgain)),
           ),
         ),
       );
@@ -443,11 +515,13 @@ Future<dynamic> modal(BuildContext context, Widget child) =>
       context: context,
       builder: (context) => Dialog(
         backgroundColor: surface(context),
-        insetPadding: const EdgeInsets.all(20),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 540, maxHeight: 740),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(26),
+            padding: EdgeInsets.all(
+              MediaQuery.sizeOf(context).width < 400 ? 18 : 24,
+            ),
             child: child,
           ),
         ),
@@ -479,14 +553,14 @@ Future<bool> confirm(
                   child: FButton(
                     variant: .outline,
                     onPress: () => Navigator.pop(context, false),
-                    child: Text(context.l10n.back),
+                    child: Flexible(child: Text(context.l10n.back)),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: FButton(
                     onPress: () => Navigator.pop(context, true),
-                    child: Text(context.l10n.confirm),
+                    child: Flexible(child: Text(context.l10n.confirm)),
                   ),
                 ),
               ],
