@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/providers.dart';
+import '../core/input_diagnostics/input_diagnostics.dart';
 import '../core/l10n/l10n.dart';
 import '../features/auth/presentation/login_page.dart';
 import '../features/home/presentation/home_page.dart';
@@ -26,14 +27,19 @@ final routerProvider = Provider((ref) {
   final router = GoRouter(
     refreshListenable: refresh,
     redirect: (context, state) {
+      recordNavigation('requested', state.uri.path);
       final user = ref.read(sessionProvider).value;
       if (user != null && !user.onboarded && state.uri.path != '/onboarding') {
+        recordNavigation('redirect', '/onboarding');
         return '/onboarding';
       }
-      if (user != null && state.uri.path == '/login') return '/';
+      if (user != null && state.uri.path == '/login') {
+        recordNavigation('redirect', '/');
+        return '/';
+      }
       return null;
     },
-    initialLocation: '/',
+    initialLocation: ref.read(appInitialLocationProvider),
     routes: [
       GoRoute(path: '/login', builder: (_, _) => const LoginPage()),
       ShellRoute(
@@ -102,11 +108,21 @@ final routerProvider = Provider((ref) {
         ],
       ),
     ],
-    errorBuilder: (context, _) =>
-        Scaffold(body: Center(child: Text(context.l10n.pageNotFound))),
+    errorBuilder: (context, state) {
+      recordNavigation('error', state.uri.path);
+      return Scaffold(body: Center(child: Text(context.l10n.pageNotFound)));
+    },
   );
-  ref.onDispose(router.dispose);
-  ref.onDispose(refresh.dispose);
+  void reportRoute() => recordNavigation(
+    'current',
+    router.routerDelegate.currentConfiguration.uri.path,
+  );
+  router.routerDelegate.addListener(reportRoute);
+  ref.onDispose(() {
+    router.routerDelegate.removeListener(reportRoute);
+    router.dispose();
+    refresh.dispose();
+  });
   return router;
 });
 

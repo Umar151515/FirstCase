@@ -175,10 +175,11 @@ class ProfilePage extends ConsumerWidget {
                               context.l10n.signOut,
                               secondary: true,
                               action: () async {
-                                await ref
+                                final cleanup = ref
                                     .read(sessionProvider.notifier)
                                     .logout();
                                 if (context.mounted) context.go('/');
+                                await cleanup;
                               },
                             ),
                           ] else ...[

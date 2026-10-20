@@ -147,17 +147,34 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
                 ref
                     .watch(categoriesProvider)
                     .when(
-                      data: (categories) => ChoiceField(
-                        context.l10n.category,
-                        value: category,
-                        options: {
-                          for (final c in categories)
-                            '${c['id']}': c['name'] as String,
-                        },
-                        onChange: (v) => setState(() => category = v),
-                      ),
+                      data: (categories) => categories.isEmpty
+                          ? StateMessage(
+                              context.l10n.categoriesUnavailable,
+                              subtitle: context.l10n.categoriesUnavailableHint,
+                              action: FButton(
+                                onPress: () =>
+                                    ref.invalidate(categoriesProvider),
+                                child: Text(context.l10n.retry),
+                              ),
+                            )
+                          : ChoiceField(
+                              context.l10n.category,
+                              value: category,
+                              options: {
+                                for (final c in categories)
+                                  '${c['id']}': c['name'] as String,
+                              },
+                              onChange: (v) => setState(() => category = v),
+                            ),
                       loading: () => const FCircularProgress(),
-                      error: (e, _) => Text('$e'),
+                      error: (e, _) => StateMessage(
+                        context.l10n.categoriesUnavailable,
+                        subtitle: '$e',
+                        action: FButton(
+                          onPress: () => ref.invalidate(categoriesProvider),
+                          child: Text(context.l10n.retry),
+                        ),
+                      ),
                     ),
                 Field(
                   context.l10n.taskDetailedDescription,
@@ -246,9 +263,14 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
                           ? context.l10n.publishTask
                           : context.l10n.saveChanges,
                       icon: FLucideIcons.arrowUpRight,
+                      enabled:
+                          ref.watch(categoriesProvider).value?.isNotEmpty ??
+                          false,
                       action: () async {
                         if (!form.currentState!.validate()) return;
-                        if (category.isEmpty) {
+                        if (!(ref.read(categoriesProvider).value ?? []).any(
+                          (item) => '${item['id']}' == category,
+                        )) {
                           throw Exception(context.l10n.chooseCategory);
                         }
                         final data = values()..remove('days');

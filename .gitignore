@@ -23,3 +23,6 @@ frontend/android/local.properties
 *.key
 .DS_Store
 Thumbs.db
+.server/
+server-status.json
+ssh-status.json

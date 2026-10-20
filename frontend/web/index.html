@@ -16,7 +16,7 @@
   <link rel="manifest" href="manifest.json">
   <style>
     html, body { margin: 0; background: #f6f5f1; }
-    #loading { position: fixed; inset: 0; display: grid; place-items: center; background: #f6f5f1; }
+    #loading { position: fixed; inset: 0; display: grid; place-items: center; background: #f6f5f1; pointer-events: none; }
     #loading img { width: 96px; height: 96px; border-radius: 18px; }
     @media (prefers-color-scheme: dark) {
       html, body, #loading { background: #151b21; }
@@ -36,6 +36,7 @@
     }, { once: true });
   </script>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="input_diagnostics.js?v=2026-10-19-navigation-v2"></script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

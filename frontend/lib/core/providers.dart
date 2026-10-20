@@ -45,11 +45,13 @@ final categoriesProvider = FutureProvider(
 final sessionProvider = AsyncNotifierProvider<SessionController, Person?>(
   SessionController.new,
 );
+final telegramInitDataProvider = Provider<String?>((ref) => telegramInitData());
+final appInitialLocationProvider = Provider<String>((ref) => '/');
 
 class SessionController extends AsyncNotifier<Person?> {
   @override
   Future<Person?> build() async {
-    final initData = telegramInitData();
+    final initData = ref.read(telegramInitDataProvider);
     if (initData == null || initData.isEmpty) return null;
     return _withLanguage(
       await ref.read(authRepositoryProvider).signIn(initData: initData),
@@ -94,9 +96,9 @@ class SessionController extends AsyncNotifier<Person?> {
 
   Future<void> logout() async {
     ref.read(apiProvider).token = null;
-    await ref.read(databaseProvider).wipePersonal();
-    ref.invalidate(resourceProvider);
     state = const AsyncData(null);
+    ref.invalidate(resourceProvider);
+    await ref.read(databaseProvider).wipePersonal();
   }
 }
 

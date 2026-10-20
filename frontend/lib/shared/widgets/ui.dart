@@ -139,6 +139,7 @@ class ActionButton extends StatefulWidget {
     this.secondary = false,
     this.destructive = false,
     this.success,
+    this.enabled = true,
     super.key,
   });
   final String label;
@@ -147,6 +148,7 @@ class ActionButton extends StatefulWidget {
   final bool secondary;
   final bool destructive;
   final String? success;
+  final bool enabled;
   @override
   State<ActionButton> createState() => _ActionButtonState();
 }
@@ -161,7 +163,7 @@ class _ActionButtonState extends State<ActionButton> {
         : widget.secondary
         ? .outline
         : .primary,
-    onPress: busy
+    onPress: busy || !widget.enabled
         ? null
         : () async {
             setState(() => busy = true);

@@ -33,7 +33,6 @@ def assert_test_database(url: str, main_url: str | None = None) -> None:
 async def db(tmp_path) -> AsyncIterator[AsyncSession]:
     assert_test_database(TEST_URL, os.environ.get("DATABASE_URL"))
     from backend.main import create_app  # noqa: F401 — registers every feature model
-
     from shared.core.database import Base
 
     engine = create_async_engine(TEST_URL)
@@ -54,7 +53,6 @@ async def db(tmp_path) -> AsyncIterator[AsyncSession]:
 @pytest_asyncio.fixture
 async def client(db: AsyncSession, tmp_path) -> AsyncIterator[httpx.AsyncClient]:
     from backend.main import create_app
-
     from shared.core.config import Settings, get_settings
     from shared.core.dependencies import get_session
 

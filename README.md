@@ -8,6 +8,11 @@
 
 Фирменные изображения находятся в `frontend/assets/brand/`: `mark-light`, `mark-dark`, `wordmark-light`, `wordmark-dark`. Они используются в шапке, на главной, во время загрузки и для значков браузера/PWA; повторяющиеся исходные варианты удалены. Подробнее о переводах и проверке отсутствия текстов вне каталогов — [docs/localization.md](docs/localization.md).
 
+## Управление сервером на Windows
+
+**Запуск:** двойной щелчок по `server.cmd`. **Обновление из GitHub:** `.\server.cmd update`.
+Статус: `.\server.cmd status`. [Инструкция по SSH, обновлению и резервным копиям](docs/server.md).
+
 ## Быстрый запуск demo
 
 Нужны Docker Desktop с Linux containers и Docker Compose v2. Бот и Telegram-аккаунт для demo не нужны. Первичная сборка Flutter скачивает SDK и пакеты, поэтому требует интернета и нескольких гигабайт свободного места.

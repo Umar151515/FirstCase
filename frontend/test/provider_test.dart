@@ -7,6 +7,8 @@ import 'package:firstcase/core/providers.dart';
 import 'support.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   test(
     'demo identity really exchanges server JWT and resets personal data',
     () async {

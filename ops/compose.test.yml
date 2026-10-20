@@ -1,0 +1,30 @@
+name: firstcase-tests
+services:
+  postgres:
+    image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
+    environment:
+      POSTGRES_USER: firstcase_test
+      POSTGRES_PASSWORD: firstcase_test_local
+      POSTGRES_DB: firstcase_test
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U firstcase_test -d firstcase_test]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  backend:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+      target: development
+    environment:
+      APP_MODE: demo
+      DATABASE_URL: postgresql+asyncpg://firstcase_test:firstcase_test_local@postgres:5432/firstcase_demo
+      TEST_DATABASE_URL: postgresql+asyncpg://firstcase_test:firstcase_test_local@postgres:5432/firstcase_test
+      JWT_SECRET: test-only-secret-72930f2699c04398a3d2769fa690840f
+      UPLOAD_DIR: /tmp/firstcase-test-uploads
+    command: [sh, -c, 'ruff check backend shared bot scripts && python scripts/check_localization.py && pytest shared/tests -q']
+    depends_on:
+      postgres:
+        condition: service_healthy

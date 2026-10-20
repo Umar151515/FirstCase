@@ -21,6 +21,10 @@ def main() -> None:
         from scripts.seed_demo import seed_demo
 
         asyncio.run(seed_demo())
+    else:
+        from scripts.seed_reference import seed_reference
+
+        asyncio.run(seed_reference())
     command = [
         sys.executable,
         "-m",

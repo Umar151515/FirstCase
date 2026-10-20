@@ -14,7 +14,6 @@ from shared.tests.conftest import TEST_URL, assert_test_database
 @pytest.mark.asyncio
 async def test_two_simultaneous_accepts_create_exactly_one_order(task_data, tmp_path):
     from backend.main import create_app
-
     from shared.core.config import Settings, get_settings
     from shared.core.database import Base
     from shared.core.dependencies import get_session
