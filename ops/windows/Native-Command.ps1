@@ -53,8 +53,8 @@ function Invoke-ServerCommand {
         $process.WaitForExit(250) | Out-Null
     }
     if (-not $timedOut) { $process.WaitForExit() }
-    $stdout = [string](Get-Content -LiteralPath $outFile -Raw -ErrorAction SilentlyContinue)
-    $stderr = [string](Get-Content -LiteralPath $errFile -Raw -ErrorAction SilentlyContinue)
+    $stdout = [IO.File]::ReadAllText($outFile)
+    $stderr = [IO.File]::ReadAllText($errFile)
     if ($ShowOutput) {
         $lines = @($stdout -split '\r?\n')
         for ($i = $outCount; $i -lt $lines.Count; $i++) { if ($lines[$i]) { Write-Host $lines[$i] } }

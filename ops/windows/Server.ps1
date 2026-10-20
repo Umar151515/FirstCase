@@ -51,7 +51,7 @@ try {
             }
             if (-not (Test-Path $git)) { throw 'Install Git for Windows, then run server.cmd update again.' }
             $dirty = Invoke-ServerCommand $git @('status','--porcelain') -Quiet -Label 'Check local changes'
-            if ($dirty.Stdout.Trim()) { throw 'Local changes exist. Commit or preserve them before updating; no files were overwritten.' }
+            if (-not [string]::IsNullOrWhiteSpace($dirty.Stdout)) { throw 'Local changes exist. Commit or preserve them before updating; no files were overwritten.' }
             $branch = Invoke-ServerCommand $git @('branch','--show-current') -Quiet -Label 'Check branch'
             if ($branch.Stdout.Trim() -ne 'main') { throw 'Server updates require the main branch.' }
             Run-Docker ($compose + @('config','--quiet')) 'Validate existing configuration' 15 | Out-Null
@@ -81,7 +81,7 @@ try {
             }
             foreach ($service in @('backend','frontend','bot')) {
                 $container = Invoke-ServerCommand $docker ($compose + @('ps','-a','-q',$service)) -Label 'Read existing container' -Quiet
-                if ($container.Stdout.Trim()) {
+                if (-not [string]::IsNullOrWhiteSpace($container.Stdout)) {
                     $oldImage = Invoke-ServerCommand $docker @('inspect','--format','{{.Image}}',$container.Stdout.Trim()) -Quiet -Label 'Read rollback image'
                     $images[$service] = $oldImage.Stdout.Trim()
                     Run-Docker @('tag',$images[$service],('firstcase-production-' + $service + ':rollback')) ('Preserve ' + $service) 15 | Out-Null
