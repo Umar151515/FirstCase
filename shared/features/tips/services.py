@@ -4,6 +4,7 @@ from shared.features.tips.repositories import TipRepository
 from shared.features.tips.schemas import TipSettingsOut
 from shared.features.uploads.repositories import AttachmentRepository
 from shared.features.uploads.services import UploadService
+from shared.features.users.repositories import UserRepository
 
 
 class TipService:
@@ -33,6 +34,9 @@ class TipService:
         return result
 
     async def update(self, user_id, data):
+        # A settings row may not exist yet. Lock its owner so concurrent first
+        # writes cannot both insert the same primary key.
+        await UserRepository(self.session).get(user_id, lock=True)
         if data.enabled and not data.qr_attachment_id and not data.payment_url:
             raise DomainError("tips_destination_required", 422, "validation_error")
         if data.qr_attachment_id:
@@ -53,6 +57,9 @@ class TipService:
         return await self.view(settings)
 
     async def public(self, user_id, actor_id=None):
+        owner = await UserRepository(self.session).get(user_id)
+        if owner.status != "active":
+            raise missing("tips_unavailable")
         settings = await self.repository.get(user_id)
         if not settings or not settings.enabled:
             raise missing("tips_unavailable")

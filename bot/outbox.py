@@ -88,8 +88,16 @@ async def record_delivery(
             next_attempt_at=now + timedelta(seconds=delay), last_error=type(error).__name__
         )
     async with factory() as session, session.begin():
+        # attempts is a fencing token: an expired worker must not change a newer lease.
         await session.execute(
-            update(Notification).where(Notification.id == delivery.id).values(**values)
+            update(Notification)
+            .where(
+                Notification.id == delivery.id,
+                Notification.attempts == delivery.attempts,
+                Notification.delivered_at.is_(None),
+                Notification.claim_until.is_not(None),
+            )
+            .values(**values)
         )
 
 

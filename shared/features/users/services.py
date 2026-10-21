@@ -1,3 +1,4 @@
+from shared.core.config import Settings
 from shared.core.exceptions import missing
 from shared.features.users.models import User
 from shared.features.users.repositories import UserRepository
@@ -8,6 +9,12 @@ class UserService:
     def __init__(self, session):
         self.session = session
         self.repository = UserRepository(session)
+
+    @staticmethod
+    def effective_role(user: User, settings: Settings) -> str:
+        if not user.is_demo and user.telegram_id is not None:
+            return "admin" if user.telegram_id in settings.admin_ids else "user"
+        return user.role
 
     async def public(self, user: User) -> PublicUser:
         return PublicUser.model_validate(user).model_copy(

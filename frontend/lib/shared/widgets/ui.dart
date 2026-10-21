@@ -689,7 +689,7 @@ Future<dynamic> mutate(
   final result = await ref
       .read(taskRepositoryProvider)
       .mutate(path, data: data, method: method);
-  ref.invalidate(resourceProvider);
+  if (ref.context.mounted) ref.invalidate(resourceProvider);
   return result;
 }
 

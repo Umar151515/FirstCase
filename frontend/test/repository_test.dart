@@ -6,6 +6,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:firstcase/core/api/api_client.dart';
 import 'package:firstcase/core/database/local_database.dart';
+import 'package:firstcase/features/auth/data/auth_repository.dart';
 import 'package:firstcase/features/tasks/data/task_repository.dart';
 
 import 'support.dart';
@@ -35,6 +36,41 @@ void main() {
       'offset': 12,
       'limit': 12,
     });
+  });
+
+  test('public bootstrap requests survive identity changes', () async {
+    final responses = <String, Completer<ResponseBody>>{};
+    final started = Completer<void>();
+    final transport = TestTransport((request) {
+      expect(request.headers.containsKey('Authorization'), isFalse);
+      final response = responses[request.path] = Completer<ResponseBody>();
+      if (responses.length == 3) started.complete();
+      return response.future;
+    });
+    final api = apiWith(transport)..token = 'old-session';
+    final tasks = TaskRepository(api, database);
+    final auth = AuthRepository(api);
+    final categories = tasks.categories();
+    final mode = auth.mode();
+    final users = auth.demoUsers();
+    await started.future;
+    api.token = 'new-session';
+    responses['/categories']!.complete(
+      jsonBody({
+        'items': [
+          {'id': 1, 'name': 'Design'},
+        ],
+      }),
+    );
+    responses['/config']!.complete(jsonBody({'mode': 'demo'}));
+    responses['/auth/demo-users']!.complete(
+      jsonBody({
+        'items': [testUser],
+      }),
+    );
+    expect((await categories).single['id'], 1);
+    expect(await mode, 'demo');
+    expect((await users).single.id, testUser['id']);
   });
 
   test(
@@ -81,6 +117,60 @@ void main() {
     );
   });
 
+  test('offline task pages never hide server authorization failures', () async {
+    var status = 200;
+    final repository = TaskRepository(
+      apiWith(
+        TestTransport((_) async => jsonBody({'items': [], 'total': 0}, status)),
+      ),
+      database,
+    );
+    await repository.tasks({'limit': 12});
+    status = 403;
+    await expectLater(
+      repository.tasks({'limit': 12}, offline: true),
+      throwsA(
+        isA<ApiFailure>().having((failure) => failure.status, 'status', 403),
+      ),
+    );
+  });
+
+  test('an old unauthorized request cannot log out a newer identity', () async {
+    final response = Completer<ResponseBody>();
+    final started = Completer<void>();
+    final api = apiWith(
+      TestTransport((_) {
+        started.complete();
+        return response.future;
+      }),
+    )..token = 'old-session';
+    var unauthorized = 0;
+    api.onUnauthorized = () => unauthorized++;
+    final pending = api.request('/orders');
+    await started.future;
+    api.token = 'new-session';
+    response.complete(jsonBody({}, 401));
+    await expectLater(pending, throwsA(isA<ApiFailure>()));
+    expect(unauthorized, 0);
+    expect(api.token, 'new-session');
+  });
+
+  test('a private download is discarded after the identity changes', () async {
+    final response = Completer<ResponseBody>();
+    final started = Completer<void>();
+    final api = apiWith(
+      TestTransport((_) {
+        started.complete();
+        return response.future;
+      }),
+    )..token = 'old-session';
+    final pending = api.download(42);
+    await started.future;
+    api.token = 'new-session';
+    response.complete(ResponseBody.fromBytes([1, 2, 3], 200));
+    await expectLater(pending, throwsA(isA<ApiFailure>()));
+  });
+
   test(
     'identity switch clears private caches and drafts, retains theme',
     () async {
@@ -111,8 +201,11 @@ void main() {
       response.complete(
         jsonBody({'id': 2, 'display_name': 'Old identity cached profile'}),
       );
-      await pending;
-      expect(await database.read('resource:$previousEpoch:/users/2'), isNull);
+      await expectLater(pending, throwsA(isA<ApiFailure>()));
+      expect(
+        await database.read('resource:$previousEpoch:ru:/users/2'),
+        isNull,
+      );
     },
   );
 

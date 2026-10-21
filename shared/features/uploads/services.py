@@ -54,7 +54,7 @@ class UploadService:
             if file.owner_id != actor_id:
                 raise forbidden("own_files_only")
             if await self.repository.avatar_owner(file.id) or await self.repository.tip_settings(
-                file.id
+                file.id, include_disabled=True
             ):
                 raise conflict_file()
             for key in ("task_id", "order_id", "report_id", "case_id"):
@@ -73,7 +73,7 @@ class UploadService:
         avatar_owner = await self.repository.avatar_owner(identifier)
         if (
             avatar_owner and avatar_owner.id != avatar_user_id
-        ) or await self.repository.tip_settings(identifier):
+        ) or await self.repository.tip_settings(identifier, include_disabled=True):
             raise conflict_file()
         for key in ("task_id", "order_id", "report_id", "case_id"):
             existing = getattr(file, key)

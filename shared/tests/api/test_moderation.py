@@ -5,6 +5,50 @@ from shared.tests.conftest import create_order
 pytestmark = pytest.mark.asyncio
 
 
+@pytest.mark.parametrize(
+    ("is_demo", "stored_role", "configured_admin", "expected_status"),
+    [
+        (False, "admin", False, 200),
+        (False, "user", True, 403),
+        (True, "admin", False, 403),
+    ],
+)
+async def test_admin_block_protection_uses_current_configuration(
+    client, db, identities, is_demo, stored_role, configured_admin, expected_status
+):
+    from shared.features.users.models import User
+
+    target = User(
+        display_name="Пользователь для проверки роли",
+        telegram_id=None if is_demo else 700001,
+        is_demo=is_demo,
+        role=stored_role,
+    )
+    db.add(target)
+    await db.commit()
+    target_id = target.id
+    settings = client._transport.app.state.settings
+    settings.admin_telegram_ids = "700001" if configured_admin else ""
+
+    # The target never signs in or makes a request to refresh its stored role.
+    response = await client.patch(
+        f"/api/v1/admin/users/{target_id}",
+        headers=identities["admin"]["headers"],
+        json={"status": "blocked", "reason": "Проверка актуальных прав администратора"},
+    )
+    assert response.status_code == expected_status, response.text
+    saved = await db.get(User, target_id, populate_existing=True)
+    if expected_status == 200:
+        assert response.json()["role"] == "user"
+        assert saved.status == "blocked"
+    else:
+        assert response.json()["error"]["key"] == "admin_block_forbidden"
+        assert saved.status == "active"
+    assert (
+        await client.get("/api/v1/admin/stats", headers=identities["admin"]["headers"])
+    ).status_code == 200
+
+
 async def test_reports_moderation_blocking_and_audit(client, identities):
     customer, admin = identities["customer"]["headers"], identities["admin"]["headers"]
     assert (await client.get("/api/v1/admin/stats", headers=customer)).status_code == 403
@@ -123,6 +167,12 @@ async def test_admin_can_hide_and_restore_task(client, identities, task_data):
     )
     assert hidden.status_code == 200
     assert (await client.get(f"/api/v1/tasks/{task['id']}")).status_code == 404
+    public = await client.get("/api/v1/tasks")
+    assert task["id"] not in [item["id"] for item in public.json()["items"]]
+    mine = await client.get("/api/v1/tasks?mine=true", headers=identities["customer"]["headers"])
+    assert mine.status_code == 200, mine.text
+    assert task["id"] in [item["id"] for item in mine.json()["items"]]
+    assert mine.json()["items"][0]["is_hidden"] is True
     restored = await client.patch(
         path,
         headers=identities["admin"]["headers"],

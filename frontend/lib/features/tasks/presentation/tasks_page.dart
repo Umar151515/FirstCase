@@ -26,6 +26,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
   String status = 'published';
   String sort = 'newest';
   String period = '';
+  DateTime? createdAfter;
   String aiPolicy = '';
   String cityQuery = '';
   bool filtersOpen = false;
@@ -74,10 +75,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
         if (aiPolicy.isNotEmpty) 'ai_policy': aiPolicy,
         if (cityQuery.isNotEmpty) 'city': cityQuery,
         if (period.isNotEmpty)
-          'created_after': DateTime.now()
-              .subtract(Duration(days: int.parse(period)))
-              .toUtc()
-              .toIso8601String(),
+          'created_after': createdAfter!.toUtc().toIso8601String(),
         'sort': sort,
         'offset': '$offset',
         'limit': '12',
@@ -195,6 +193,11 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                       },
                       onChange: (value) => setState(() {
                         period = value;
+                        createdAfter = value.isEmpty
+                            ? null
+                            : DateTime.now().subtract(
+                                Duration(days: int.parse(value)),
+                              );
                         offset = 0;
                       }),
                     ),
@@ -240,6 +243,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                       variant: .ghost,
                       onPress: () => setState(() {
                         aiPolicy = period = cityQuery = '';
+                        createdAfter = null;
                         city.clear();
                         status = 'published';
                         offset = 0;

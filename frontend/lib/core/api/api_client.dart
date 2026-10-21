@@ -54,18 +54,24 @@ class ApiClient {
     String method = 'GET',
     dynamic data,
     Json? query,
+    bool identityScoped = true,
   }) async {
+    final epoch = identityEpoch;
     try {
-      return (await dio.request<dynamic>(
+      final response = await dio.request<dynamic>(
         path,
         data: data,
         queryParameters: query,
         options: Options(
           method: method,
-          extra: {'identity_epoch': identityEpoch},
-          headers: _headers,
+          extra: {'identity_epoch': identityScoped ? epoch : null},
+          headers: identityScoped ? _headers : {'Accept-Language': language},
         ),
-      )).data;
+      );
+      if (identityScoped && identityEpoch != epoch) {
+        throw ApiFailure(messages.errorSessionExpired);
+      }
+      return response.data;
     } on DioException catch (error) {
       throw failure(error);
     }
@@ -128,15 +134,19 @@ class ApiClient {
     int id, {
     String? path,
   }) async {
+    final epoch = identityEpoch;
     try {
       final response = await dio.get<List<int>>(
         path ?? '/uploads/$id',
         options: Options(
-          extra: {'identity_epoch': identityEpoch},
+          extra: {'identity_epoch': epoch},
           responseType: ResponseType.bytes,
           headers: _headers,
         ),
       );
+      if (identityEpoch != epoch) {
+        throw ApiFailure(messages.errorSessionExpired);
+      }
       final disposition = response.headers.value('content-disposition') ?? '';
       final encoded = RegExp(
         "filename\\*=utf-8''([^;]+)",

@@ -7,7 +7,7 @@ from shared.features.uploads.schemas import AttachmentOut
 class TipSettingsUpdate(Schema):
     payment_method: str = Field(default="", max_length=100)
     qr_attachment_id: int | None = Field(default=None, gt=0)
-    payment_url: HttpsUrl | None = None
+    payment_url: HttpsUrl | None = Field(default=None, max_length=2048)
     enabled: bool = False
     public_consent: bool = False
 

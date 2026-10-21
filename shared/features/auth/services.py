@@ -32,9 +32,10 @@ class AuthService:
             "role": role,
             "language": language(data.get("language_code")),
         }
-        updates = {k: v for k, v in values.items() if k not in ("telegram_id", "role", "language")}
-        if role == "admin":
-            updates["role"] = "admin"
+        # Profile preferences survive login; privileges always follow current configuration.
+        updates = {
+            k: v for k, v in values.items() if k not in ("telegram_id", "display_name", "language")
+        }
         stmt = (
             insert(User)
             .values(**values)

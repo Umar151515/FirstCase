@@ -1,3 +1,4 @@
+from shared.core.config import Settings, get_settings
 from shared.core.exceptions import conflict, forbidden
 from shared.features.chat.models import Message
 from shared.features.chat.repositories import MessageRepository
@@ -13,17 +14,21 @@ from shared.features.uploads.models import Attachment
 from shared.features.uploads.repositories import AttachmentRepository
 from shared.features.uploads.services import UploadService
 from shared.features.users.repositories import UserRepository
+from shared.features.users.services import UserService
 
 
 class ModerationService:
-    def __init__(self, session):
+    def __init__(self, session, settings: Settings | None = None):
         self.session = session
+        self.settings = settings or get_settings()
         self.repository = ModerationRepository(session)
 
     async def user(self, admin_id, identifier, data):
         user = await UserRepository(self.session).get(identifier, lock=True)
-        if user.id == admin_id or user.role == "admin":
+        role = UserService.effective_role(user, self.settings)
+        if user.id == admin_id or role == "admin":
             raise forbidden("admin_block_forbidden")
+        user.role = role
         user.status = data.status
         await self.repository.add(
             admin_id=admin_id,

@@ -17,7 +17,7 @@ CYRILLIC = re.compile(r"[А-Яа-яЁёӨөҮүҢң]")
 PLACEHOLDER = re.compile(r"\{([a-zA-Z][a-zA-Z0-9_]*)(?:\s*,|\})")
 
 
-def messages(data: dict) -> dict[str, str]:
+def messages(data: dict) -> dict[str, object]:
     return {key: value for key, value in data.items() if not key.startswith("@")}
 
 
@@ -33,13 +33,13 @@ def check() -> list[str]:
     for key in russian.keys() & kyrgyz.keys():
         if not re.fullmatch(r"[a-z][a-zA-Z0-9]*", key):
             errors.append(f"message key must be semantic lowerCamelCase: {key}")
+        expected = set(catalogs["ru"].get(f"@{key}", {}).get("placeholders", {}))
         for locale, value in (("ru", russian[key]), ("ky", kyrgyz[key])):
             if not isinstance(value, str) or not value.strip():
                 errors.append(f"empty message: {locale}.{key}")
+                continue
             if "??" in value or "\ufffd" in value:
                 errors.append(f"damaged Unicode translation: {locale}.{key}")
-        expected = set(catalogs["ru"].get(f"@{key}", {}).get("placeholders", {}))
-        for locale, value in (("ru", russian[key]), ("ky", kyrgyz[key])):
             if PLACEHOLDER.findall(value) and set(PLACEHOLDER.findall(value)) != expected:
                 errors.append(f"placeholder mismatch: {locale}.{key}")
             if expected and not expected.issubset(PLACEHOLDER.findall(value)):

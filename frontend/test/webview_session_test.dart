@@ -85,6 +85,7 @@ void main() {
 
   test('reopening Telegram preserves the same account drafts', () async {
     final database = LocalDatabase(NativeDatabase.memory());
+    await database.write('personal_owner', testUser['id']);
     await database.write('task_draft', {
       'title': 'Unfinished task',
     }, personal: true);
@@ -105,4 +106,39 @@ void main() {
     container.dispose();
     await database.close();
   });
+
+  test(
+    'opening Telegram with another account clears previous private data',
+    () async {
+      final database = LocalDatabase(NativeDatabase.memory());
+      await database.write('personal_owner', 2);
+      await database.write('task_draft', {
+        'title': 'Another account draft',
+      }, personal: true);
+      await database.write('resource:1:ru:/users/2', {'id': 2}, personal: true);
+      await database.write('theme', true);
+      final api = apiWith(
+        TestTransport(
+          (_) async =>
+              jsonBody({'access_token': 'new-session', 'user': testUser}),
+        ),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(database),
+          apiProvider.overrideWithValue(api),
+          telegramInitDataProvider.overrideWithValue('signed-init-data'),
+        ],
+      );
+      addTearDown(() async {
+        container.dispose();
+        await database.close();
+      });
+      await container.read(sessionProvider.future);
+      expect(await database.read('task_draft'), isNull);
+      expect(await database.read('resource:1:ru:/users/2'), isNull);
+      expect(await database.read('personal_owner'), testUser['id']);
+      expect(await database.read('theme'), isTrue);
+    },
+  );
 }

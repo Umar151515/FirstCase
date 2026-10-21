@@ -3,10 +3,14 @@ $destination = Join-Path $stateRoot ('backups\' + (Get-Date -Format 'yyyyMMdd-HH
 New-Item -ItemType Directory -Path $destination -Force | Out-Null
 & icacls.exe $destination /inheritance:r /grant:r ('{0}:(OI)(CI)F' -f [Security.Principal.WindowsIdentity]::GetCurrent().Name) '*S-1-5-18:(OI)(CI)F' | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Cannot protect the backup directory.' }
-$stopped = $false
+$writers = @()
 try {
-    $stopped = $true
-    Run-Docker ($compose + @('stop','backend','bot')) 'Pause writers for backup' | Out-Null
+    # Preserve intentionally stopped services, including an unconfigured bot.
+    $running = Invoke-ServerCommand $docker ($compose + @('ps','--status','running','--services','backend','bot')) -Label 'Find running writers' -TimeoutSeconds 15 -Quiet
+    $writers = @($running.Stdout -split '\r?\n' | Where-Object { $_ -in @('backend','bot') })
+    if ($writers.Count) {
+        Run-Docker ($compose + @('stop') + $writers) 'Pause writers for backup' | Out-Null
+    }
     Run-Docker ($compose + @('exec','-T','postgres','pg_dump','-U','firstcase','-d','firstcase_production','-Fc','-f','/tmp/firstcase-backup.dump')) 'Back up database' 180 | Out-Null
     Run-Docker ($compose + @('cp','postgres:/tmp/firstcase-backup.dump',(Join-Path $destination 'database.dump'))) 'Copy database backup' | Out-Null
     # Use the existing container, without starting a new application or migrations.
@@ -16,7 +20,7 @@ try {
     if (Test-Path (Join-Path $stateRoot 'deployment.json')) { Copy-Item -LiteralPath (Join-Path $stateRoot 'deployment.json') -Destination $destination }
 } finally {
     # start reuses the old containers even when newer images have already been built.
-    if ($stopped) { Run-Docker ($compose + @('start','backend','bot')) 'Resume existing writers' | Out-Null }
+    if ($writers.Count) { Run-Docker ($compose + @('start') + $writers) 'Resume existing writers' | Out-Null }
 }
 Write-Host ('Backup: ' + $destination) -ForegroundColor Green
 return $destination

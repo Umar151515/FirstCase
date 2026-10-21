@@ -30,7 +30,7 @@ class TaskService:
         created_before=None,
         ai_policy=None,
     ):
-        conditions = [] if admin else [Task.is_hidden.is_(False)]
+        conditions = [] if admin or mine_user_id else [Task.is_hidden.is_(False)]
         if q:
             conditions.append(or_(Task.title.ilike(f"%{q}%"), Task.description.ilike(f"%{q}%")))
         if category_id:

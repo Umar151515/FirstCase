@@ -35,25 +35,54 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
   List<int> attachments = [];
   bool loaded = false;
   Object? loadError;
+  int _loadRevision = 0;
+  int? _owner;
   @override
   void initState() {
     super.initState();
-    Future.microtask(load);
+    ref.listenManual<int?>(
+      sessionProvider.select((session) => session.value?.id),
+      (_, userId) {
+        _loadRevision++;
+        loaded = false;
+        if (userId != null) Future.microtask(load);
+      },
+      fireImmediately: true,
+    );
   }
 
   Future<void> load() async {
-    if (mounted) {
-      setState(() {
-        loaded = false;
-        loadError = null;
-      });
+    if (!mounted) return;
+    final userId = ref.read(sessionProvider).value?.id;
+    if (userId == null) return;
+    final revision = ++_loadRevision;
+    if (_owner != userId) {
+      _owner = userId;
+      title.clear();
+      description.clear();
+      result.clear();
+      city.clear();
+      days.text = '7';
+      category = '';
+      payment = 'tips';
+      revisions = '2';
+      aiPolicy = AiPolicy.allowed;
+      coverId = null;
+      originalDeadline = null;
+      originalDays = null;
+      attachments = [];
     }
+    setState(() {
+      loaded = false;
+      loadError = null;
+    });
     try {
       final repository = ref.read(taskRepositoryProvider);
       final data = widget.id == null
           ? await repository.draft()
           : await repository.resource('/tasks/${widget.id}');
-      if (data is Map && mounted) {
+      if (!mounted || revision != _loadRevision) return;
+      if (data is Map) {
         title.text = data['title'] as String? ?? '';
         description.text = data['description'] as String? ?? '';
         result.text = data['expected_result'] as String? ?? '';
@@ -75,9 +104,10 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
         }
       }
     } catch (error) {
+      if (!mounted || revision != _loadRevision) return;
       loadError = error;
     }
-    if (mounted) setState(() => loaded = true);
+    if (mounted && revision == _loadRevision) setState(() => loaded = true);
   }
 
   @override
@@ -149,8 +179,8 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
                     .when(
                       data: (categories) => categories.isEmpty
                           ? StateMessage(
-                              context.l10n.categoriesUnavailable,
-                              subtitle: context.l10n.categoriesUnavailableHint,
+                              context.l10n.chooseCategory,
+                              subtitle: context.l10n.taskFormSubtitle,
                               action: FButton(
                                 onPress: () =>
                                     ref.invalidate(categoriesProvider),
@@ -168,7 +198,7 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
                             ),
                       loading: () => const FCircularProgress(),
                       error: (e, _) => StateMessage(
-                        context.l10n.categoriesUnavailable,
+                        context.l10n.chooseCategory,
                         subtitle: '$e',
                         action: FButton(
                           onPress: () => ref.invalidate(categoriesProvider),
@@ -289,6 +319,7 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
                           method: widget.id == null ? 'POST' : 'PATCH',
                           data: data,
                         );
+                        if (!mounted) return;
                         await ref.read(taskRepositoryProvider).clearDraft();
                         if (context.mounted) {
                           context.go('/tasks/${saved['id']}');

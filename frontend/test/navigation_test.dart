@@ -7,6 +7,7 @@ import 'package:firstcase/features/home/presentation/home_page.dart';
 import 'package:firstcase/features/profile/presentation/profile_form_page.dart';
 import 'package:firstcase/features/profile/presentation/profile_page.dart';
 import 'package:firstcase/features/tasks/presentation/tasks_page.dart';
+import 'package:firstcase/shared/widgets/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
@@ -20,6 +21,81 @@ void main() {
     await initializeDateFormatting('ru');
     await initializeDateFormatting('ky');
   });
+
+  for (final path in ['/tasks/new', '/profile/edit']) {
+    testWidgets('switching accounts resets private form input on $path', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1000, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final database = LocalDatabase(NativeDatabase.memory());
+      final api = apiWith(
+        TestTransport((request) async {
+          if (request.path == '/auth/demo-login') {
+            final id = (request.data as Map)['user_id'] as int;
+            return jsonBody({
+              'access_token': 'session-$id',
+              'user': {...testUser, 'id': id, 'display_name': 'Account $id'},
+            });
+          }
+          if (request.path == '/config') {
+            return jsonBody({'mode': 'production'});
+          }
+          return jsonBody({'items': [], 'total': 0});
+        }),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(database),
+          apiProvider.overrideWithValue(api),
+          appInitialLocationProvider.overrideWithValue(path),
+        ],
+      );
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        container.dispose();
+        await database.close();
+      });
+      await tester.runAsync(() async {
+        await container.read(sessionProvider.future);
+        await container.read(sessionProvider.notifier).demo(1);
+      });
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const FirstCaseApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final router = container.read(routerProvider);
+      final labels = AppLocalizations.of(
+        tester.element(find.byType(Field).first),
+      );
+      final label = path == '/tasks/new'
+          ? labels.taskTitle
+          : labels.profileName;
+      final field = find.byWidgetPredicate(
+        (widget) => widget is Field && widget.label == label,
+      );
+      await tester.enterText(
+        find.descendant(of: field, matching: find.byType(EditableText)),
+        'Private input from account one',
+      );
+      await tester.runAsync(
+        () => container.read(sessionProvider.notifier).demo(2),
+      );
+      await tester.pumpAndSettle();
+      expect(container.read(routerProvider), same(router));
+      expect(router.routerDelegate.currentConfiguration.uri.path, path);
+      expect(
+        tester.widget<Field>(field).controller.text,
+        isNot('Private input from account one'),
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   for (final onboarded in [true, false]) {
     testWidgets(

@@ -14,7 +14,7 @@ from starlette.exceptions import HTTPException
 
 import shared.models  # noqa: F401
 from backend.api.dependencies import Session
-from backend.api.middleware import BodyLimitMiddleware
+from backend.api.middleware import RESPONSE_HEADERS, BodyLimitMiddleware, ResponseHeadersMiddleware
 from backend.api.router import create_router
 from shared.core.config import Settings, get_settings
 from shared.core.database import engine
@@ -26,11 +26,11 @@ from shared.core.logging import configure_logging
 logger = logging.getLogger("firstcase")
 
 
-def error_response(status: int, code: str, message: str, details=None):
+def error_response(status: int, code: str, message: str, details=None, *, headers=None):
     body = {"error": {"code": code, "key": message, "message": translate(message)}}
     if details is not None:
         body["error"]["details"] = details
-    return JSONResponse(body, status_code=status)
+    return JSONResponse(body, status_code=status, headers={**RESPONSE_HEADERS, **(headers or {})})
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -66,22 +66,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 yield session
 
         app.dependency_overrides[get_session] = configured_session
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.origins,
-        allow_credentials=False,
-        allow_methods=["GET", "POST", "PUT", "PATCH", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type", "Accept-Language"],
-        expose_headers=["Content-Disposition"],
-    )
     app.add_middleware(BodyLimitMiddleware, maximum=(settings.max_upload_size_mb + 1) * 1024 * 1024)
     buckets: dict[tuple, deque] = defaultdict(deque)
 
     @app.middleware("http")
     async def request_limits(request: Request, call_next):
         length = request.headers.get("content-length")
-        if length:
+        if length is not None:
             try:
+                if not length.isascii() or not length.isdigit():
+                    raise ValueError("Invalid content length")
                 if int(length) > (settings.max_upload_size_mb + 1) * 1024 * 1024:
                     return error_response(413, "request_too_large", "request_too_large")
             except ValueError:
@@ -107,11 +101,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 for old_key in list(buckets):
                     if not buckets[old_key] or buckets[old_key][-1] < now - 60:
                         del buckets[old_key]
-        response = await call_next(request)
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["Referrer-Policy"] = "no-referrer"
-        response.headers["Cache-Control"] = "no-store"
-        return response
+        return await call_next(request)
 
     @app.exception_handler(DomainError)
     async def domain_error(request: Request, exc: DomainError):
@@ -129,14 +119,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.exception_handler(HTTPException)
     async def http_error(request: Request, exc: HTTPException):
         key = "request_too_large" if exc.status_code == 413 else "http_error"
-        return error_response(exc.status_code, "http_error", key)
+        return error_response(exc.status_code, "http_error", key, headers=exc.headers)
 
     @app.exception_handler(Exception)
     async def unexpected_error(request: Request, exc: Exception):
         logger.error(
             "Request failed: %s %s (%s)", request.method, request.url.path, type(exc).__name__
         )
-        return error_response(500, "internal_error", "internal_error")
+        response = error_response(500, "internal_error", "internal_error")
+        # ServerErrorMiddleware runs outside the app's middleware stack.
+        origin = request.headers.get("origin")
+        if origin and "*" in settings.origins:
+            response.headers["Access-Control-Allow-Origin"] = "*"
+        elif origin and origin in settings.origins:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers.add_vary_header("Origin")
+        return response
 
     @app.get("/health")
     async def health() -> dict[str, str]:
@@ -148,6 +146,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"status": "ok", "database": "reachable"}
 
     app.include_router(create_router(settings.app_mode))
+    # CORS must also wrap requests rejected before they reach the router.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.origins,
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "PUT", "PATCH", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "Accept-Language"],
+        expose_headers=["Content-Disposition", "Retry-After"],
+    )
+    app.add_middleware(ResponseHeadersMiddleware)
     app.add_middleware(LocaleMiddleware)
     return app
 

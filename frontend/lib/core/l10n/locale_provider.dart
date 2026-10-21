@@ -43,6 +43,7 @@ class LocaleController extends Notifier<Locale> {
     state = Locale(locale.languageCode);
     updateDocumentLocale(state.languageCode);
     await ref.read(databaseProvider).write('locale', state.languageCode);
+    if (!ref.mounted) return;
     if (ref.read(sessionProvider).value != null) {
       await ref.read(sessionProvider.notifier).updateProfile({
         'language': state.languageCode,
@@ -52,6 +53,7 @@ class LocaleController extends Notifier<Locale> {
 
   Future<void> adoptAccountLanguage(String? language) async {
     await ready;
+    if (!ref.mounted) return;
     if (!_hasPreference && (language == 'ru' || language == 'ky')) {
       state = Locale(language!);
       updateDocumentLocale(state.languageCode);

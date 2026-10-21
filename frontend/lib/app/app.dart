@@ -21,6 +21,35 @@ import '../features/admin/presentation/admin_page.dart';
 import '../shared/widgets/ui.dart';
 import 'shell.dart';
 
+// The nested Navigator keeps its own GlobalKey when accounts change. Reset
+// each route's content so that open forms cannot retain another user's input.
+GoRoute _accountRoute({
+  required String path,
+  required Widget Function(BuildContext, GoRouterState) builder,
+}) => GoRoute(
+  path: path,
+  builder: (context, state) => Consumer(
+    builder: (context, ref, _) => KeyedSubtree(
+      key: ValueKey(
+        ref.watch(sessionProvider.select((session) => session.value?.id)),
+      ),
+      child: builder(context, state),
+    ),
+  ),
+);
+
+Widget _identifiedPage(
+  BuildContext context,
+  GoRouterState state,
+  Widget Function(int) builder,
+) {
+  final id = int.tryParse(state.pathParameters['id'] ?? '');
+  if (id == null || id <= 0) {
+    return Center(child: Text(context.l10n.pageNotFound));
+  }
+  return builder(id);
+}
+
 final routerProvider = Provider((ref) {
   final refresh = ValueNotifier<int>(0);
   ref.listen(sessionProvider, (_, _) => refresh.value++);
@@ -41,52 +70,61 @@ final routerProvider = Provider((ref) {
     },
     initialLocation: ref.read(appInitialLocationProvider),
     routes: [
-      GoRoute(path: '/login', builder: (_, _) => const LoginPage()),
+      _accountRoute(path: '/login', builder: (_, _) => const LoginPage()),
       ShellRoute(
         builder: (context, state, child) =>
             AppShell(location: state.uri.path, child: child),
         routes: [
-          GoRoute(path: '/', builder: (_, _) => const HomePage()),
-          GoRoute(
+          _accountRoute(path: '/', builder: (_, _) => const HomePage()),
+          _accountRoute(
             path: '/tasks',
             builder: (_, state) => TasksPage(
               initialQuery: state.uri.queryParameters['q'] ?? '',
               category: state.uri.queryParameters['category_id'],
             ),
           ),
-          GoRoute(path: '/tasks/new', builder: (_, _) => const TaskFormPage()),
-          GoRoute(
+          _accountRoute(
+            path: '/tasks/new',
+            builder: (_, _) => const TaskFormPage(),
+          ),
+          _accountRoute(
             path: '/tasks/:id/edit',
-            builder: (_, state) =>
-                TaskFormPage(id: int.parse(state.pathParameters['id']!)),
+            builder: (context, state) => _identifiedPage(
+              context,
+              state,
+              (id) => TaskFormPage(key: ValueKey(id), id: id),
+            ),
           ),
-          GoRoute(
+          _accountRoute(
             path: '/tasks/:id',
-            builder: (_, state) =>
-                TaskDetailPage(int.parse(state.pathParameters['id']!)),
+            builder: (context, state) =>
+                _identifiedPage(context, state, TaskDetailPage.new),
           ),
-          GoRoute(path: '/orders', builder: (_, _) => const OrdersPage()),
-          GoRoute(
+          _accountRoute(path: '/orders', builder: (_, _) => const OrdersPage()),
+          _accountRoute(
             path: '/orders/:id',
-            builder: (_, state) =>
-                OrderPage(int.parse(state.pathParameters['id']!)),
+            builder: (context, state) =>
+                _identifiedPage(context, state, OrderPage.new),
           ),
-          GoRoute(path: '/profile', builder: (_, _) => const ProfilePage()),
-          GoRoute(
+          _accountRoute(
+            path: '/profile',
+            builder: (_, _) => const ProfilePage(),
+          ),
+          _accountRoute(
             path: '/users/:id',
-            builder: (_, state) =>
-                ProfilePage(id: int.parse(state.pathParameters['id']!)),
+            builder: (context, state) =>
+                _identifiedPage(context, state, (id) => ProfilePage(id: id)),
           ),
-          GoRoute(
+          _accountRoute(
             path: '/profile/edit',
             builder: (_, _) => const ProfileFormPage(),
           ),
-          GoRoute(
+          _accountRoute(
             path: '/onboarding',
             builder: (_, _) => const ProfileFormPage(onboarding: true),
           ),
-          GoRoute(path: '/tips', builder: (_, _) => const TipsPage()),
-          GoRoute(
+          _accountRoute(path: '/tips', builder: (_, _) => const TipsPage()),
+          _accountRoute(
             path: '/portfolio/new',
             builder: (_, state) => PortfolioFormPage(
               orderId: int.tryParse(
@@ -94,17 +132,20 @@ final routerProvider = Provider((ref) {
               ),
             ),
           ),
-          GoRoute(
+          _accountRoute(
             path: '/portfolio/:id',
-            builder: (_, state) =>
-                PortfolioDetailPage(int.parse(state.pathParameters['id']!)),
+            builder: (context, state) =>
+                _identifiedPage(context, state, PortfolioDetailPage.new),
           ),
-          GoRoute(
+          _accountRoute(
             path: '/notifications',
             builder: (_, _) => const NotificationsPage(),
           ),
-          GoRoute(path: '/reports', builder: (_, _) => const ReportsPage()),
-          GoRoute(path: '/admin', builder: (_, _) => const AdminPage()),
+          _accountRoute(
+            path: '/reports',
+            builder: (_, _) => const ReportsPage(),
+          ),
+          _accountRoute(path: '/admin', builder: (_, _) => const AdminPage()),
         ],
       ),
     ],

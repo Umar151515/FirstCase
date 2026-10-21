@@ -62,22 +62,26 @@ def validate_bytes(data: bytes, mime_type: str):
 
 def sanitize_image(data: bytes, mime_type: str) -> bytes:
     """Strip EXIF/GPS and embedded metadata before an upload can become public."""
-    with Image.open(io.BytesIO(data)) as original:
-        oriented = ImageOps.exif_transpose(original)
-        mode = (
-            "RGBA"
-            if mime_type != "image/jpeg"
-            and ("A" in oriented.getbands() or "transparency" in oriented.info)
-            else "RGB"
-        )
-        picture = Image.new(mode, oriented.size)
-        picture.paste(oriented.convert(mode))
-        output = io.BytesIO()
-        picture.save(
-            output,
-            format={"image/png": "PNG", "image/jpeg": "JPEG", "image/webp": "WEBP"}[mime_type],
-        )
-        return output.getvalue()
+    try:
+        with Image.open(io.BytesIO(data)) as original:
+            oriented = ImageOps.exif_transpose(original)
+            mode = (
+                "RGBA"
+                if mime_type != "image/jpeg"
+                and ("A" in oriented.getbands() or "transparency" in oriented.info)
+                else "RGB"
+            )
+            picture = Image.new(mode, oriented.size)
+            picture.paste(oriented.convert(mode))
+            output = io.BytesIO()
+            picture.save(
+                output,
+                format={"image/png": "PNG", "image/jpeg": "JPEG", "image/webp": "WEBP"}[mime_type],
+            )
+            return output.getvalue()
+    except (ValueError, OSError, SyntaxError, Image.DecompressionBombError) as exc:
+        # JPEG verification may accept headers while decoding later discovers truncation.
+        raise DomainError("file_type_mismatch", 422, "invalid_file") from exc
 
 
 class LocalStorage:

@@ -11,6 +11,7 @@ from shared.core.i18n import locale
 from shared.core.security import decode_access_token, unauthorized
 from shared.features.users.models import User
 from shared.features.users.repositories import UserRepository
+from shared.features.users.services import UserService
 
 Session = Annotated[AsyncSession, Depends(get_session, scope="function")]
 bearer = HTTPBearer(auto_error=False)
@@ -44,6 +45,7 @@ async def optional_user(
         raise forbidden("account_blocked")
     if settings.app_mode == "production" and user.is_demo:
         raise unauthorized()
+    user.role = UserService.effective_role(user, settings)
     return user
 
 

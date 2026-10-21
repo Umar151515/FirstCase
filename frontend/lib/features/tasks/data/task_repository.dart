@@ -9,7 +9,7 @@ class TaskRepository {
   final ApiClient api;
   final LocalDatabase cache;
   Future<List<Json>> categories() async =>
-      items(await api.request('/categories'));
+      items(await api.request('/categories', identityScoped: false));
   Future<dynamic> resource(String path) async {
     final epoch = api.identityEpoch;
     final language = api.language;
@@ -56,8 +56,13 @@ class TaskRepository {
       if (api.identityEpoch == epoch && api.language == language) {
         await cache.write(key, data, personal: true);
       }
-    } on ApiFailure {
-      if (!offline) rethrow;
+    } on ApiFailure catch (error) {
+      if (!offline ||
+          error.status != null ||
+          api.identityEpoch != epoch ||
+          api.language != language) {
+        rethrow;
+      }
       data = await cache.read(key);
       if (data == null) rethrow;
     }

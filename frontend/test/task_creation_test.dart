@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:dio/dio.dart';
 import 'package:drift/native.dart';
 import 'package:firstcase/core/database/local_database.dart';
 import 'package:firstcase/core/l10n/l10n.dart';
@@ -19,6 +22,74 @@ class _SignedIn extends SessionController {
 }
 
 void main() {
+  testWidgets(
+    'a task form waits for authentication before restoring a private draft',
+    (tester) async {
+      final database = LocalDatabase(NativeDatabase.memory());
+      await database.write('personal_owner', 2);
+      await database.write('task_draft', {
+        'title': 'Private draft from the previous account',
+      }, personal: true);
+      final authenticated = Completer<ResponseBody>();
+      final api = apiWith(
+        TestTransport((request) async {
+          if (request.path == '/auth/telegram') return authenticated.future;
+          return jsonBody({'items': [], 'total': 0});
+        }),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(database),
+          apiProvider.overrideWithValue(api),
+          telegramInitDataProvider.overrideWithValue('signed-init-data'),
+        ],
+      );
+      late Future<Person?> login;
+      await tester.runAsync(() async {
+        login = container.read(sessionProvider.future);
+        await Future<void>.delayed(Duration.zero);
+      });
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        container.dispose();
+        await database.close();
+      });
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            locale: const Locale('ru'),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: appLocalizationsDelegates,
+            home: FTheme(
+              data: FTheme.neutral.light.touch,
+              child: const Scaffold(body: TaskFormPage()),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.runAsync(() async {
+        authenticated.complete(
+          jsonBody({'access_token': 'session', 'user': testUser}),
+        );
+        await login;
+      });
+      await tester.pumpAndSettle();
+      final labels = AppLocalizations.of(
+        tester.element(find.byType(TaskFormPage)),
+      );
+      final field = tester.widget<Field>(
+        find.byWidgetPredicate(
+          (widget) => widget is Field && widget.label == labels.taskTitle,
+        ),
+      );
+      expect(field.controller.text, isEmpty);
+      expect(await tester.runAsync(() => database.read('task_draft')), isNull);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'empty catalogue can be retried and a selected category is published',
     (tester) async {
@@ -90,14 +161,14 @@ void main() {
       );
       await tester.pumpAndSettle();
       final l = AppLocalizations.of(tester.element(find.byType(TaskFormPage)));
-      expect(find.text(l.categoriesUnavailable), findsOneWidget);
+      expect(find.text(l.chooseCategory), findsOneWidget);
       final publish = find.widgetWithText(FButton, l.publishTask);
       expect(tester.widget<FButton>(publish).onPress, isNull);
       available = true;
       await tester.ensureVisible(find.text(l.retry));
       await tester.tap(find.text(l.retry));
       await tester.pumpAndSettle();
-      expect(find.text(l.categoriesUnavailable), findsNothing);
+      expect(find.text(l.chooseCategory), findsNothing);
       await tester.tap(find.text('Разработка'));
       await tester.pumpAndSettle();
       Future<void> fill(String label, String value) async {

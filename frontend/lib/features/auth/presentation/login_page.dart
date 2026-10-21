@@ -138,9 +138,10 @@ class _IdentityRow extends ConsumerWidget {
             secondary: true,
             action: () async {
               await ref.read(sessionProvider.notifier).demo(user.id);
+              if (!context.mounted) return;
               final state = ref.read(sessionProvider);
               if (state.hasError) throw state.error!;
-              if (context.mounted) {
+              if (state.value != null && state.value!.id == user.id) {
                 if (Navigator.canPop(context)) Navigator.pop(context);
                 context.go(state.value!.onboarded ? '/' : '/onboarding');
               }

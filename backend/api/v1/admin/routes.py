@@ -74,9 +74,11 @@ async def users(
 
 
 @router.patch("/users/{identifier}", response_model=UserOut)
-async def moderate_user(identifier: int, data: UserModeration, admin: AdminUser, session: Session):
+async def moderate_user(
+    identifier: int, data: UserModeration, admin: AdminUser, session: Session, settings: Config
+):
     return await UserService(session).own(
-        await ModerationService(session).user(admin.id, identifier, data)
+        await ModerationService(session, settings).user(admin.id, identifier, data)
     )
 
 

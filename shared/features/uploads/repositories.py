@@ -38,14 +38,11 @@ class AttachmentRepository(Repository[Attachment]):
             .limit(1)
         )
 
-    async def tip_settings(self, attachment_id):
-        return (
-            await self.session.scalars(
-                select(TipSettings).where(
-                    TipSettings.qr_attachment_id == attachment_id, TipSettings.enabled.is_(True)
-                )
-            )
-        ).all()
+    async def tip_settings(self, attachment_id, *, include_disabled=False):
+        conditions = [TipSettings.qr_attachment_id == attachment_id]
+        if not include_disabled:
+            conditions.append(TipSettings.enabled.is_(True))
+        return (await self.session.scalars(select(TipSettings).where(*conditions))).all()
 
     async def completed_customer(self, performer_id, customer_id):
         return (

@@ -16,7 +16,7 @@ def main() -> None:
     settings = get_settings()  # Fail before touching the DB if secrets are invalid.
     if settings.app_mode == "production" and args.reload:
         parser.error("Hot reload is unavailable in production")
-    subprocess.run(["alembic", "upgrade", "head"], check=True)
+    subprocess.run([sys.executable, "-m", "alembic", "upgrade", "head"], check=True)
     if settings.app_mode == "demo":
         from scripts.seed_demo import seed_demo
 
